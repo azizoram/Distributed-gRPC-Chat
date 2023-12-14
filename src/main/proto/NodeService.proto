@@ -1,0 +1,31 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "cz.cvut.fel";
+
+
+service NodeService{
+    rpc join(JoinRequest) returns (JoinResponse);
+    rpc chat(stream ChatMessage) returns (stream ChatMessage); // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
+}
+
+message AddressMsg {
+    string ip_address = 1;
+    int32 port = 2;
+}
+
+message JoinRequest {
+    string name = 1;
+    AddressMsg address = 2;
+}
+
+message ChatMessage {
+    string name = 1;
+    string message = 2;
+}
+
+message Empty {}
+
+message JoinResponse {
+    AddressMsg next = 1;
+    AddressMsg prev = 2;
+}
