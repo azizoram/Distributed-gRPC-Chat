@@ -5,7 +5,7 @@ option java_package = "cz.cvut.fel";
 
 service NodeService{
     rpc join(JoinRequest) returns (JoinResponse);
-    rpc chat(stream ChatMessage) returns (stream ChatMessage); // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
+    rpc send(ChatMessage) returns (Empty); // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
 }
 
 message AddressMsg {

@@ -52,4 +52,8 @@ public class Address implements Comparable<Address>, Serializable {
     public Address copy() {
         return new Address(this.hostname, this.port);
     }
+
+    public AddressMsg toAddressMsg() {
+        return AddressMsg.newBuilder().setIpAddress(hostname).setPort(port).build();
+    }
 }

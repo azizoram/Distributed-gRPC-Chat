@@ -16,7 +16,7 @@ public class ChatClient implements Runnable{
 
     private void parse_commandline(String commandline) {
         if (commandline.equals("h")) {
-//            node.sendHelloToNext(); TODO//TODO
+            node.sendHelloToNext();
         } else if (commandline.equals("s")) {
             node.printStatus();
         } else if (commandline.equals("?")) {
