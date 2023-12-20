@@ -24,8 +24,9 @@ public class ChatClient implements Runnable{
             System.out.print("h - send Hello message to Next neighbour");
             System.out.print("s - print node status");
         } else {
-            // do nothing
-            System.out.print("Unrecognized command.");
+            node.userSendMessage(commandline);
+//            ChatMessage message = ChatMessage.newBuilder().setName(node.getUname()).setMessage(commandline).build();
+//            node.sendMessage(message, null);
         }
     }
 
@@ -37,7 +38,7 @@ public class ChatClient implements Runnable{
             commandline = "";
             System.out.print("\ncmd > ");
 
-            node.printStatus();
+//            node.printStatus();
             try {
                 commandline = reader.readLine();
                 parse_commandline(commandline);

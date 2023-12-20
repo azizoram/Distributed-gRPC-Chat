@@ -1,6 +1,5 @@
 package cz.cvut.fel;
 
-import com.google.protobuf.DescriptorProtos;
 import cz.cvut.fel.model.Address;
 import cz.cvut.fel.model.DSNeighbours;
 import io.grpc.ManagedChannel;
@@ -8,7 +7,6 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.stub.StreamObservers;
 import lombok.Getter;
 
 import java.io.IOException;
@@ -33,6 +31,18 @@ public class Node implements Runnable{
 
     private int generateId(String uname, Address own) {
         return (uname + own.toString()).hashCode();
+    }
+
+    private void updateTopology(Address newNodeAddress, StreamObserver<JoinResponse> responseObserver){
+        // Respond new node with their neighbrs
+        AddressMsg msg_next = myNeighbours.next.toAddressMsg();
+        AddressMsg msg_prev = own.toAddressMsg();
+        JoinResponse joinResponse = JoinResponse.newBuilder().setNext(msg_next).setPrev(msg_prev).build();
+        responseObserver.onNext(joinResponse);
+        responseObserver.onCompleted();
+
+        // Set own next to joined node
+        myNeighbours.next = newNodeAddress.copy();
     }
 
     public void printStatus() {
@@ -72,6 +82,12 @@ public class Node implements Runnable{
             JoinRequest request = JoinRequest.newBuilder().setName(uname).setAddress(addressMsg).build();
             JoinResponse response = stub.join(request);
             myNeighbours.set(response);
+            // tell my next he has new prev
+            channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port).usePlaintext().build();
+            stub = NodeServiceGrpc.newBlockingStub(channel);
+            request = JoinRequest.newBuilder().setAddress(own.toAddressMsg()).build();
+            Empty empty = stub.updateConnection(request);
+
         }catch (Exception e){
             System.err.println("Message listener - something is wrong: " + e.getMessage());
         }
@@ -80,11 +96,6 @@ public class Node implements Runnable{
     public void join(JoinRequest request, StreamObserver<JoinResponse> responseObserver) {
         System.out.println("Received join request from: " + request.getName());
         Address externalAddress = new Address(request.getAddress());
-//        if (externalAddress.compareTo(own) == 0){ // ZEROTH CASE PROCESSED
-//            System.out.println("Self join requested, seizing");
-//            responseObserver.onCompleted();
-//            return;
-//        }
         if (myNeighbours.next.compareTo(own) == 0 && myNeighbours.prev.compareTo(own) == 0){
             System.out.println("First join request, setting neighbours");
             AddressMsg next = own.toAddressMsg();
@@ -93,8 +104,23 @@ public class Node implements Runnable{
             myNeighbours.prev = externalAddress.copy();
             responseObserver.onNext(JoinResponse.newBuilder().setNext(next).setPrev(prev).build());
             responseObserver.onCompleted();
+        } else {
+            updateTopology(externalAddress, responseObserver);
         }
+    }
 
+    public void sendMessage(ChatMessage message, StreamObserver<Empty> responseObserver) {
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
+                .usePlaintext()
+                .build();
+        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+        ChatMessage msg = ChatMessage.newBuilder().setMessage(message.getMessage()).setName(message.getName()).build();
+        stub.sendMessage(msg);
+    }
+
+    public void userSendMessage(String message){
+        ChatMessage msg = ChatMessage.newBuilder().setMessage(message).setName(uname).build();
+        sendMessage(msg, null);
     }
 
     public void sendHelloToNext() {
@@ -104,6 +130,10 @@ public class Node implements Runnable{
                 .build();
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         ChatMessage message = ChatMessage.newBuilder().setMessage("Hello from " + uname).setName(uname).build();
-        stub.send(message);
+        stub.sendMessage(message);
+    }
+
+    public void updatePrev(JoinRequest msg) {
+        myNeighbours.prev = new Address(msg.getAddress());
     }
 }
