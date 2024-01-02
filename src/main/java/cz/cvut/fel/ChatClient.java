@@ -15,7 +15,7 @@ public class ChatClient implements Runnable{
     }
 
     private void parse_commandline(String commandline) {
-
+        if (commandline.isEmpty()) return;
         if (commandline.startsWith("/dm")) {
             node.sendDirectMsg(commandline);
         } else if (commandline.equals("s")) {
@@ -37,8 +37,6 @@ public class ChatClient implements Runnable{
 
         while (running){
             commandline = "";
-            System.out.print("\ncmd > ");
-
 //            node.printStatus();
             try {
                 commandline = reader.readLine();
