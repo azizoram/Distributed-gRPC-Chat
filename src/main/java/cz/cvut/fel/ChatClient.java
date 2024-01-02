@@ -18,11 +18,12 @@ public class ChatClient implements Runnable{
         if (commandline.isEmpty()) return;
         if (commandline.startsWith("/dm")) {
             node.sendDirectMsg(commandline);
+        } else if (commandline.startsWith("/logout")) {
+            node.selfLogOut();
         } else if (commandline.equals("s")) {
             node.printStatus();
         } else if (commandline.equals("?")) {
             System.out.print("? - this help");
-            System.out.print("h - send Hello message to Next neighbour");
             System.out.print("s - print node status");
         } else {
             node.sendBroadcastMsg(commandline);

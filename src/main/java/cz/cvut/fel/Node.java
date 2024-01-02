@@ -21,7 +21,7 @@ public class Node implements Runnable{
     private NodeService nodeService;
 //    private ManagedChannel channel;// ?? outwards
     private Server server;// ?? inwards
-
+    private Thread chatClientThread;
     public Node(String uname, Address own){
         this.id = generateId(uname, own);
         this.uname = uname;
@@ -64,7 +64,7 @@ public class Node implements Runnable{
             throw new RuntimeException(e);
         }
         tryJoin(new Address("localhost", 1111));
-        new Thread(chatClient).start();
+        (chatClientThread = new Thread(chatClient)).start();
     }
 
     public void tryJoin(Address to){
@@ -164,5 +164,34 @@ public class Node implements Runnable{
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         DirectMessage msg = DirectMessage.newBuilder().setMessage(message).setAuthor(uname).setRecipient(recipient).setReceived(false).build();
         stub.sendMessage(msg);
+    }
+
+    public void selfLogOut(){
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
+                .usePlaintext()
+                .build();
+        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+//         request = JoinRequest.newBuilder().setAddress(myNeighbours.prev.toAddressMsg()).build();
+        LogOutRequest request = LogOutRequest.newBuilder().setOwnAddress(own.toAddressMsg()).setNewNeighbour(myNeighbours.prev.toAddressMsg()).build();
+        Empty empty = stub.logOut(request);
+        channel = ManagedChannelBuilder.forAddress(myNeighbours.prev.hostname, myNeighbours.prev.port)
+                .usePlaintext()
+                .build();
+        stub = NodeServiceGrpc.newBlockingStub(channel);
+        request = LogOutRequest.newBuilder().setOwnAddress(own.toAddressMsg()).setNewNeighbour(myNeighbours.next.toAddressMsg()).build();
+        empty = stub.logOut(request);
+
+        // isolated
+        myNeighbours.next = own.copy();
+        myNeighbours.prev = own.copy();
+    }
+
+    public void processLogOut(LogOutRequest request) {
+        if (request.getOwnAddress().equals(myNeighbours.next.toAddressMsg())){
+            myNeighbours.next = new Address(request.getNewNeighbour());
+        }
+        if (request.getOwnAddress().equals(myNeighbours.prev.toAddressMsg())){
+            myNeighbours.prev = new Address(request.getNewNeighbour());
+        }
     }
 }

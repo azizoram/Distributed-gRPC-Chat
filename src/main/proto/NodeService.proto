@@ -5,9 +5,10 @@ option java_package = "cz.cvut.fel";
 
 service NodeService{
     rpc join(JoinRequest) returns (JoinResponse);
-    rpc sendMessage(DirectMessage) returns (Empty); // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
-    rpc updateConnection(JoinRequest) returns (Empty); // Specialni zprava pro zpetecne spojeni
+    rpc sendMessage(DirectMessage) returns (Empty);      // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
+    rpc updateConnection(JoinRequest) returns (Empty);   // Specialni zprava pro zpetecne spojeni
     rpc broadcastMessage(BroadcastMessage) returns (Empty);
+    rpc logOut(LogOutRequest) returns (Empty);
 }
 
 message AddressMsg {
@@ -37,4 +38,9 @@ message Empty {}
 message JoinResponse {
     AddressMsg next = 1;
     AddressMsg prev = 2;
+}
+
+message LogOutRequest {
+    AddressMsg ownAddress = 1;
+    AddressMsg newNeighbour = 2;
 }

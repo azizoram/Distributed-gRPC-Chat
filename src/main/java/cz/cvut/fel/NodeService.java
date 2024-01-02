@@ -43,4 +43,8 @@ public class NodeService extends NodeServiceGrpc.NodeServiceImplBase {
         }
         node.passBroadcastMsg(msg);
     }
+    public void logOut(LogOutRequest request, StreamObserver<Empty> responseObserver){
+        sendEmptyResponse(responseObserver);
+        node.processLogOut(request);
+    }
 }
