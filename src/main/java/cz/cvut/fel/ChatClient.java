@@ -15,8 +15,9 @@ public class ChatClient implements Runnable{
     }
 
     private void parse_commandline(String commandline) {
-        if (commandline.equals("h")) {
-            node.sendHelloToNext();
+
+        if (commandline.startsWith("/dm")) {
+            node.sendDirectMsg(commandline);
         } else if (commandline.equals("s")) {
             node.printStatus();
         } else if (commandline.equals("?")) {
@@ -53,5 +54,13 @@ public class ChatClient implements Runnable{
 
     public void reciveBcastMsg(BroadcastMessage msg) {
         System.out.println("B!" + msg.getAuthor() + " : " + msg.getMessage());
+    }
+
+    public void receiveDirectMsg(DirectMessage message) {
+        System.out.println("D!" + message.getAuthor() + " : " + message.getMessage());
+    }
+
+    public void failedDirectMsg(DirectMessage message) {
+        System.out.println("User named :" + message.getRecipient() + " - not found!!!");
     }
 }

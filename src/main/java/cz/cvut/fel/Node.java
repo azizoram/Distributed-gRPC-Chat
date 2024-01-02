@@ -109,30 +109,6 @@ public class Node implements Runnable{
         }
     }
 
-    public void sendMessage(ChatMessage message, StreamObserver<Empty> responseObserver) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
-                .usePlaintext()
-                .build();
-        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
-        ChatMessage msg = ChatMessage.newBuilder().setMessage(message.getMessage()).setAuthor(message.getAuthor()).build();
-        stub.sendMessage(msg);
-    }
-
-    public void userSendMessage(String message){
-        ChatMessage msg = ChatMessage.newBuilder().setMessage(message).setAuthor(uname).build();
-        sendMessage(msg, null);
-    }
-
-    public void sendHelloToNext() {
-        System.out.println("Sending hello to next neighbour");
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
-                .usePlaintext()
-                .build();
-        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
-        ChatMessage message = ChatMessage.newBuilder().setMessage("Hello from " + uname).setAuthor(uname).build();
-        stub.sendMessage(message);
-    }
-
     public void updatePrev(JoinRequest msg) {
         myNeighbours.prev = new Address(msg.getAddress());
     }
@@ -154,5 +130,39 @@ public class Node implements Runnable{
                 .build();
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         stub.broadcastMessage(msg);
+    }
+
+    public void processMessage(DirectMessage message) {
+        if (message.getRecipient().equals(uname)){
+            chatClient.receiveDirectMsg(message);
+            message = message.toBuilder().setReceived(true).build();
+        }
+        if (message.getAuthor().equals(uname)){
+            if (!message.getReceived()){
+                chatClient.failedDirectMsg(message);
+            }
+            return;
+        }
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
+                .usePlaintext()
+                .build();
+        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+        stub.sendMessage(message);
+    }
+
+    public void sendDirectMsg(String commandline) {
+        String[] split = commandline.split(" ");
+        if (split.length < 3){
+            System.out.println("Usage: /dm <recipient> <message>");
+            return;
+        }
+        String recipient = split[1];
+        String message = split[2];
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
+                .usePlaintext()
+                .build();
+        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+        DirectMessage msg = DirectMessage.newBuilder().setMessage(message).setAuthor(uname).setRecipient(recipient).setReceived(false).build();
+        stub.sendMessage(msg);
     }
 }

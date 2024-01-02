@@ -16,28 +16,28 @@ public class NodeService extends NodeServiceGrpc.NodeServiceImplBase {
 
     }
 
-    public void sendMessage(ChatMessage message, StreamObserver<Empty> responseObserver) {
-        System.out.println(message.getAuthor() + " : " + message.getMessage());
-        responseObserver.onNext(Empty.newBuilder().build());
-        responseObserver.onCompleted();
+    public void sendMessage(DirectMessage message, StreamObserver<Empty> responseObserver) {
+        node.processMessage(message);
+        sendEmptyResponse(responseObserver);
     }
 
-    public void updateConnection(JoinRequest msg, StreamObserver<Empty> responseObserver){
-        System.out.println("New previous node:" + msg.getAddress());
+    private static void sendEmptyResponse(StreamObserver<Empty> responseObserver) {
         responseObserver.onNext(
                 Empty.newBuilder().build() // load empty response
         );
         responseObserver.onCompleted(); // launch responses
+    }
+
+    public void updateConnection(JoinRequest msg, StreamObserver<Empty> responseObserver){
+        System.out.println("New previous node:" + msg.getAddress());
+        sendEmptyResponse(responseObserver);
 
         node.updatePrev(msg);
     }
     public void broadcastMessage(BroadcastMessage msg, StreamObserver<Empty> responseObserver){
 //        System.out.println("B!" + msg.getAuthor() + " : " + msg.getMessage());// TODO: REDO
         node.getChatClient().reciveBcastMsg(msg);
-        responseObserver.onNext(
-                Empty.newBuilder().build() // load empty response
-        );
-        responseObserver.onCompleted(); // launch responses
+        sendEmptyResponse(responseObserver);
         if (msg.getAuthor().equals(node.getUname())){
             return;
         }
