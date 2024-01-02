@@ -63,7 +63,7 @@ public class Node implements Runnable{
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        tryJoin(new Address("localhost", 2010));
+        tryJoin(new Address("localhost", 1111));
         new Thread(chatClient).start();
     }
 
@@ -74,7 +74,7 @@ public class Node implements Runnable{
         }
         try{
 
-            ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 2010)
+            ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 1111)
                     .usePlaintext()
                     .build();
             NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
@@ -114,12 +114,12 @@ public class Node implements Runnable{
                 .usePlaintext()
                 .build();
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
-        ChatMessage msg = ChatMessage.newBuilder().setMessage(message.getMessage()).setName(message.getName()).build();
+        ChatMessage msg = ChatMessage.newBuilder().setMessage(message.getMessage()).setAuthor(message.getAuthor()).build();
         stub.sendMessage(msg);
     }
 
     public void userSendMessage(String message){
-        ChatMessage msg = ChatMessage.newBuilder().setMessage(message).setName(uname).build();
+        ChatMessage msg = ChatMessage.newBuilder().setMessage(message).setAuthor(uname).build();
         sendMessage(msg, null);
     }
 
@@ -129,11 +129,30 @@ public class Node implements Runnable{
                 .usePlaintext()
                 .build();
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
-        ChatMessage message = ChatMessage.newBuilder().setMessage("Hello from " + uname).setName(uname).build();
+        ChatMessage message = ChatMessage.newBuilder().setMessage("Hello from " + uname).setAuthor(uname).build();
         stub.sendMessage(message);
     }
 
     public void updatePrev(JoinRequest msg) {
         myNeighbours.prev = new Address(msg.getAddress());
+    }
+
+    public void sendBroadcastMsg(String commandline) {
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
+                .usePlaintext()
+                .build();
+        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+        BroadcastMessage message = BroadcastMessage.newBuilder().setMessage(commandline).setAuthor(uname).build();
+        stub.broadcastMessage(message);
+    }
+    public void passBroadcastMsg(BroadcastMessage msg){
+        if (msg.getAuthor().equals(uname)){
+            return;
+        }
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
+                .usePlaintext()
+                .build();
+        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+        stub.broadcastMessage(msg);
     }
 }

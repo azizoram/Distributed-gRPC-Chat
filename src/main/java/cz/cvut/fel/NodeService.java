@@ -17,7 +17,7 @@ public class NodeService extends NodeServiceGrpc.NodeServiceImplBase {
     }
 
     public void sendMessage(ChatMessage message, StreamObserver<Empty> responseObserver) {
-        System.out.println(message.getName()+ " : " + message.getMessage());
+        System.out.println(message.getAuthor() + " : " + message.getMessage());
         responseObserver.onNext(Empty.newBuilder().build());
         responseObserver.onCompleted();
     }
@@ -30,5 +30,17 @@ public class NodeService extends NodeServiceGrpc.NodeServiceImplBase {
         responseObserver.onCompleted(); // launch responses
 
         node.updatePrev(msg);
+    }
+    public void broadcastMessage(BroadcastMessage msg, StreamObserver<Empty> responseObserver){
+//        System.out.println("B!" + msg.getAuthor() + " : " + msg.getMessage());// TODO: REDO
+        node.getChatClient().reciveBcastMsg(msg);
+        responseObserver.onNext(
+                Empty.newBuilder().build() // load empty response
+        );
+        responseObserver.onCompleted(); // launch responses
+        if (msg.getAuthor().equals(node.getUname())){
+            return;
+        }
+        node.passBroadcastMsg(msg);
     }
 }

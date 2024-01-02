@@ -7,6 +7,7 @@ service NodeService{
     rpc join(JoinRequest) returns (JoinResponse);
     rpc sendMessage(ChatMessage) returns (Empty); // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
     rpc updateConnection(JoinRequest) returns (Empty); // Specialni zprava pro zpetecne spojeni
+    rpc broadcastMessage(BroadcastMessage) returns (Empty);
 }
 
 message AddressMsg {
@@ -20,7 +21,13 @@ message JoinRequest {
 }
 
 message ChatMessage {
-    string name = 1;
+    string author = 1;
+    string message = 2;
+    string recipient = 3;
+}
+
+message BroadcastMessage {
+    string author = 1;
     string message = 2;
 }
 

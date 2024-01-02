@@ -24,7 +24,7 @@ public class ChatClient implements Runnable{
             System.out.print("h - send Hello message to Next neighbour");
             System.out.print("s - print node status");
         } else {
-            node.userSendMessage(commandline);
+            node.sendBroadcastMsg(commandline);
 //            ChatMessage message = ChatMessage.newBuilder().setName(node.getUname()).setMessage(commandline).build();
 //            node.sendMessage(message, null);
         }
@@ -49,5 +49,9 @@ public class ChatClient implements Runnable{
             }
         }
         System.out.println("Closing chat client.");
+    }
+
+    public void reciveBcastMsg(BroadcastMessage msg) {
+        System.out.println("B!" + msg.getAuthor() + " : " + msg.getMessage());
     }
 }
