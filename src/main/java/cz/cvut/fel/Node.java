@@ -2,12 +2,15 @@ package cz.cvut.fel;
 
 import cz.cvut.fel.model.Address;
 import cz.cvut.fel.model.DSNeighbours;
+import cz.cvut.fel.utils.DelayHandler;
+import cz.cvut.fel.utils.NoDelayHandler;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.io.IOException;
 
@@ -19,6 +22,8 @@ public class Node implements Runnable{
     private DSNeighbours myNeighbours;
     private ChatClient chatClient;
     private NodeService nodeService;
+    @Setter
+    private DelayHandler delayHandler;
 //    private ManagedChannel channel;// ?? outwards
     private Server server;// ?? inwards
     private Thread chatClientThread;
@@ -27,6 +32,7 @@ public class Node implements Runnable{
         this.uname = uname;
         this.own = own.copy();
         this.myNeighbours = new DSNeighbours(own);
+        this.delayHandler = new NoDelayHandler();
     }
 
     private int generateId(String uname, Address own) {
@@ -73,18 +79,20 @@ public class Node implements Runnable{
             return;
         }
         try{
-
             ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 1111)
                     .usePlaintext()
                     .build();
             NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
             AddressMsg addressMsg = AddressMsg.newBuilder().setIpAddress(own.hostname).setPort(own.port).build();
             JoinRequest request = JoinRequest.newBuilder().setName(uname).setAddress(addressMsg).build();
+            delayHandler.handleResponseDelay("join");
             JoinResponse response = stub.join(request);
             myNeighbours.set(response);
             // tell my next he has new prev
+
             channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port).usePlaintext().build();
             stub = NodeServiceGrpc.newBlockingStub(channel);
+            delayHandler.handleResponseDelay("updateConnection");
             request = JoinRequest.newBuilder().setAddress(own.toAddressMsg()).build();
             Empty empty = stub.updateConnection(request);
 
