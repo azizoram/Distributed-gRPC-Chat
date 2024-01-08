@@ -1,11 +1,12 @@
-package cz.cvut.fel;
+package cz.cvut.fel.services;
 
+import cz.cvut.fel.*;
 import io.grpc.stub.StreamObserver;
 
-public class NodeService extends NodeServiceGrpc.NodeServiceImplBase {
+public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
 
     Node node;
-    public NodeService(Node node) {
+    public ChatService(Node node) {
         this.node = node;
     }
 

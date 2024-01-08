@@ -11,6 +11,11 @@ service NodeService{
     rpc logOut(LogOutRequest) returns (Empty);
 }
 
+service ElectionService{
+    rpc sendPID(AddressMsg) returns (Empty);
+    rpc tossCall(AddressPair) returns (Empty);
+}
+
 message AddressMsg {
     string ip_address = 1;
     int32 port = 2;
@@ -43,4 +48,9 @@ message JoinResponse {
 message LogOutRequest {
     AddressMsg ownAddress = 1;
     AddressMsg newNeighbour = 2;
+}
+
+message AddressPair {
+    AddressMsg ntid = 1;
+    AddressMsg nntid = 2;
 }

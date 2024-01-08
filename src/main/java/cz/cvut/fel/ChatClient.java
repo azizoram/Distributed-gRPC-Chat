@@ -18,7 +18,10 @@ public class ChatClient implements Runnable{
         if (commandline.isEmpty()) return;
         if (commandline.startsWith("/dm")) {
             node.sendDirectMsg(commandline);
-        } else if (commandline.startsWith("/logout")) {
+        } else if (commandline.startsWith("/elect")) {
+            node.startElection();
+        }
+        else if (commandline.startsWith("/logout")) {
             node.selfLogOut();
         } else if (commandline.equals("s")) {
             node.printStatus();
