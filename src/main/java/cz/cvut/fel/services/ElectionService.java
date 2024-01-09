@@ -5,6 +5,8 @@ import cz.cvut.fel.model.Address;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import cz.cvut.fel.utils.NodeUtils;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j(topic = "bimbam")
@@ -20,20 +22,17 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
         this.tid = node.getOwn();
         this.state = ElectionState.ACTIVE;
     }
-    private void respondEmpty(StreamObserver<Empty> responseObserver){
-        responseObserver.onNext(Empty.newBuilder().build());
-        responseObserver.onCompleted();
-    }
+
     @Override
     public void sendPID(AddressMsg request, StreamObserver<Empty> responseObserver) {
         log.debug("pid request" + new Address(request));
-        respondEmpty(responseObserver);
+        NodeUtils.respondEmpty(responseObserver);
         handleHandshakes(request);
     }
 
     @Override
     public void tossCall(AddressPair request, StreamObserver<Empty> responseObserver) {
-        respondEmpty(responseObserver);
+        NodeUtils.respondEmpty(responseObserver);
         switch (state){
             case ACTIVE:
                 handleActive(request);
@@ -134,5 +133,9 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
         ElectionServiceGrpc.ElectionServiceBlockingStub blockingStub = ElectionServiceGrpc.newBlockingStub(channel);
         blockingStub.sendPID(getIDtoToss());
         node.closeChannelProperly(channel);
+    }
+
+    public String getState() {
+        return state.toString();
     }
 }

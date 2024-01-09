@@ -4,6 +4,7 @@ import cz.cvut.fel.model.Address;
 import cz.cvut.fel.model.DSNeighbours;
 import cz.cvut.fel.services.ChatService;
 import cz.cvut.fel.services.ElectionService;
+import cz.cvut.fel.services.TerminationService;
 import cz.cvut.fel.utils.DelayHandler;
 import cz.cvut.fel.utils.NoDelayHandler;
 import io.grpc.ManagedChannel;
@@ -15,7 +16,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Getter
@@ -28,6 +28,7 @@ public class Node implements Runnable{
     private ChatClient chatClient;
     private ChatService chatService;
     private ElectionService electionService;
+    private TerminationService terminationService;
     @Setter
     private DelayHandler delayHandler;
 //    private ManagedChannel channel;// ?? outwards
@@ -60,6 +61,8 @@ public class Node implements Runnable{
     public void printStatus() {
         log.info("Status: " + this + " with addres " + own);
         log.info("    with neighbours " + myNeighbours);
+        log.info("    node election state is " + electionService.getState());
+        log.info("    node computation module is " + (terminationService.isPassive() ? "passive" : "active"));
 //        System.out.println("Status: " + this + " with addres " + own);
 //        System.out.println("    with neighbours " + myNeighbours);
     }
@@ -70,9 +73,11 @@ public class Node implements Runnable{
         chatClient = new ChatClient(this);
         chatService = new ChatService(this); // service needed? mb not, probably not
         electionService = new ElectionService(this);
+        terminationService = new TerminationService(this);
         server = ServerBuilder.forPort(own.port)
                 .addService(chatService)
                 .addService(electionService)
+                .addService(terminationService)
                 .build();
         try {
             server.start();
@@ -233,5 +238,16 @@ public class Node implements Runnable{
     public void startElection() {
         electionService.tossElection();
         log.debug("Starting election");
+    }
+
+    public Address getPrevAddr() {
+        return myNeighbours.prev.copy();
+    }
+
+    public void setActivityStatus(boolean b) {
+        terminationService.setPassive(!b);
+    }
+    public void detectTermination(){
+        terminationService.initiateDetection();
     }
 }

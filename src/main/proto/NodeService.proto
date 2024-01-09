@@ -16,6 +16,10 @@ service ElectionService{
     rpc tossCall(AddressPair) returns (Empty);
 }
 
+service TerminationService{
+    rpc detectTermination(Token) returns (Empty);
+}
+
 message AddressMsg {
     string ip_address = 1;
     int32 port = 2;
@@ -31,11 +35,13 @@ message DirectMessage {
     string message = 2;
     string recipient = 3;
     bool received = 4;
+    int32 hopCount = 5;
 }
 
 message BroadcastMessage {
     string author = 1;
     string message = 2;
+    int32 hopCount = 3;
 }
 
 message Empty {}
@@ -53,4 +59,8 @@ message LogOutRequest {
 message AddressPair {
     AddressMsg ntid = 1;
     AddressMsg nntid = 2;
+}
+
+message Token {
+    bool isBlack = 1;
 }
