@@ -29,15 +29,16 @@ public class ChatClient implements Runnable{
         }
         else if (commandline.startsWith("/logout")) {
             node.selfLogOut();
-        } else if (commandline.equals("s")) {
+        } else if(commandline.startsWith("/selfDestruct")){
+            node.selfDestruct();
+        }
+        else if (commandline.equals("s")) {
             node.printStatus();
         } else if (commandline.equals("?")) {
             System.out.print("? - this help");
             System.out.print("s - print node status");
         } else {
             node.sendBroadcastMsg(commandline);
-//            ChatMessage message = ChatMessage.newBuilder().setName(node.getUname()).setMessage(commandline).build();
-//            node.sendMessage(message, null);
         }
     }
 

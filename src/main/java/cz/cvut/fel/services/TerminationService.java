@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Random;
 
+import static cz.cvut.fel.utils.NodeUtils.respondEmpty;
+
 
 // A service responsible for handling termination based on Dijkstra, Feijen, Van Gasteren algorithm
 
@@ -43,7 +45,7 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
     }
 
     public void initiateDetection() {
-        log.info("Initiating termination");
+        log.info("Initiating termination detection");
         isInitiator = true;
         if (!isPassive){// if the node which initiated termination is not passive, it should act as if it recived black token but have some buisness to do before making new white one
             log.info("Initiator is not passive");
@@ -64,7 +66,7 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
     }
 
     public void detectTermination(Token token, StreamObserver<Empty> responseObserver) {
-        responseObserver.onNext(Empty.newBuilder().build());
+        respondEmpty(responseObserver);
         if (!isPassive){
             log.info("Node is not passive, holding token");
             holdedToken = token;
@@ -88,7 +90,7 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
             pass(newToken);
             return;
         }
-        log.info("Termination detected!!");
+//        log.info("Termination detected!!");
         node.sendBroadcastMsg("Termination detected!!");
     }
 

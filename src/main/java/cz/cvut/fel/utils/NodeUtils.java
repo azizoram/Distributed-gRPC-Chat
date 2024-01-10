@@ -20,4 +20,12 @@ public class NodeUtils {
         responseObserver.onNext(Empty.newBuilder().build());
         responseObserver.onCompleted();
     }
+
+    public static ManagedChannel openChannelToNext(Node node) {
+        Address next = node.getNextAddr();
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(next.hostname, next.port)
+                .usePlaintext()
+                .build();
+        return channel;
+    }
 }

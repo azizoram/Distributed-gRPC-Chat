@@ -7,6 +7,7 @@ import cz.cvut.fel.services.ElectionService;
 import cz.cvut.fel.services.TerminationService;
 import cz.cvut.fel.utils.DelayHandler;
 import cz.cvut.fel.utils.NoDelayHandler;
+import cz.cvut.fel.utils.NodeUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
@@ -154,61 +155,10 @@ public class Node implements Runnable{
     }
 
     public void sendBroadcastMsg(String commandline) {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
-                .usePlaintext()
-                .build();
-        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
-        BroadcastMessage message = BroadcastMessage.newBuilder().setMessage(commandline).setAuthor(uname).build();
-        stub.broadcastMessage(message);
-        closeChannelProperly(channel);
-    }
-    public void passBroadcastMsg(BroadcastMessage msg){
-        if (msg.getAuthor().equals(uname)){
-            return;
-        }
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
-                .usePlaintext()
-                .build();
-        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
-        stub.broadcastMessage(msg);
-        closeChannelProperly(channel);
+        chatService.sendBroadcastMsg(commandline);
     }
 
-    public void processMessage(DirectMessage message) {
-        if (message.getRecipient().equals(uname)){
-            chatClient.receiveDirectMsg(message);
-            message = message.toBuilder().setReceived(true).build();
-        }
-        if (message.getAuthor().equals(uname)){
-            if (!message.getReceived()){
-                chatClient.failedDirectMsg(message);
-            }
-            return;
-        }
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
-                .usePlaintext()
-                .build();
-        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
-        stub.sendMessage(message);
-        closeChannelProperly(channel);
-    }
-
-    public void sendDirectMsg(String commandline) {
-        String[] split = commandline.split(" ");
-        if (split.length < 3){
-            System.out.println("Usage: /dm <recipient> <message>");
-            return;
-        }
-        String recipient = split[1];
-        String message = split[2];
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
-                .usePlaintext()
-                .build();
-        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
-        DirectMessage msg = DirectMessage.newBuilder().setMessage(message).setAuthor(uname).setRecipient(recipient).setReceived(false).build();
-        stub.sendMessage(msg);
-        closeChannelProperly(channel);
-    }
+    public void sendDirectMsg(String commandline) { chatService.sendDirectMsg(commandline); }
 
     public void selfLogOut(){
         ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
@@ -248,11 +198,31 @@ public class Node implements Runnable{
     public Address getPrevAddr() {
         return myNeighbours.prev.copy();
     }
-
+    public Address getNextAddr() {
+        return myNeighbours.next.copy();
+    }
     public void setActivityStatus(boolean b) {
         terminationService.setPassive(!b);
     }
     public void detectTermination(){
         terminationService.initiateDetection();
+    }
+
+    public void selfDestruct() {
+        log.info("Initiating self destruct protocol");
+        log.info("System will be destroyed in 5 seconds");
+        log.info("Shutting off the receivers");
+        server.shutdown();
+        int i = 5;
+        while (i > 0){
+            log.info("Self destruct in " + i + " seconds");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            i--;
+        }
+        System.exit(0);
     }
 }
