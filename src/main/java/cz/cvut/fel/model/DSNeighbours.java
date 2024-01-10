@@ -1,5 +1,6 @@
 package cz.cvut.fel.model;
 
+import cz.cvut.fel.BrokenTopology;
 import cz.cvut.fel.JoinResponse;
 import cz.cvut.fel.model.Address;
 
@@ -33,5 +34,14 @@ public class DSNeighbours implements Serializable {
     public void set(JoinResponse response) {
         this.next = new Address(response.getNext());
         this.prev = new Address(response.getPrev());
+    }
+
+    public void setLostAsNeighbour(BrokenTopology msg) {
+        Address lost = new Address(msg.getBrokenNode());
+        if (msg.getIsPrevBroken()){
+            this.next = lost;
+        }else{
+            this.prev = lost;
+        }
     }
 }

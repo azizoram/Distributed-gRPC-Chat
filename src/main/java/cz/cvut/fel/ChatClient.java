@@ -38,8 +38,8 @@ public class ChatClient implements Runnable{
         }
         else if (commandline.equals("s")) {
             node.printStatus();
-        } else if (commandline.equals("?")) {
-            System.out.print("? - this help");
+        } else if (commandline.startsWith("/help")) {
+            System.out.print("/help - this help");
             System.out.print("s - print node status");
         } else {
             node.sendBroadcastMsg(commandline);

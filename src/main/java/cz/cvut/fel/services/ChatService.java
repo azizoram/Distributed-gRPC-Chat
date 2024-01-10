@@ -1,6 +1,7 @@
 package cz.cvut.fel.services;
 
 import cz.cvut.fel.*;
+import cz.cvut.fel.model.Address;
 import cz.cvut.fel.utils.NodeUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -12,7 +13,9 @@ import static cz.cvut.fel.utils.NodeUtils.respondEmpty;
 
 @Slf4j(topic = "main_topic")
 public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
-    public static final int MAX_HOP_COUNT = 255;
+    public static final int MAX_HOP_COUNT = 10;
+//    public static final int MAX_HOP_COUNT = 255;
+
     Node node;
     public ChatService(Node node) {
         this.node = node;
@@ -64,11 +67,15 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
         responseObserver.onCompleted(); // launch responses
     }
 
-    public void updateConnection(JoinRequest msg, StreamObserver<Empty> responseObserver){
-        log.info("New previous node:" + msg.getAddress());
+    public void updateConnection(UpdateNeighbourMsg msg, StreamObserver<Empty> responseObserver){
         sendEmptyResponse(responseObserver);
+        if (msg.getIsPrev()){
+            log.info("New request to set previous node:" + msg.getAddress());
+        }else {
+            log.info("New request to next node:" + msg.getAddress());
+        }
 
-        node.updatePrev(msg);
+        node.updateNeigh(msg);
     }
     public void broadcastMessage(BroadcastMessage msg, StreamObserver<Empty> responseObserver){
         node.getChatClient().reciveBcastMsg(msg);
@@ -161,6 +168,40 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
             }
             return;
         }
+        BrokenTopology msg = BrokenTopology.newBuilder().setIsPrevBroken(isPrevBroken).setBrokenNode(node.getOwn().toAddressMsg()).build();
+        stub.connectionLost(msg);
+        closeChannelProperly(channel);
+    }
 
+    public void connectionLost(BrokenTopology msg, StreamObserver<Empty> responseObserver) {
+        sendEmptyResponse(responseObserver);
+        if (msg.getBrokenNode().equals(node.getOwn().toAddressMsg())){
+            return;
+        }
+        ManagedChannel channel;
+        if (msg.getIsPrevBroken()){
+            channel = NodeUtils.openChannelToNext(node, true);
+        }else {
+            channel = NodeUtils.openChannelToPrev(node, true);
+        }
+
+        if (channel == null){
+            node.getMyNeighbours().setLostAsNeighbour(msg);
+            try {
+                Address lost = new Address(msg.getBrokenNode());
+                channel = ManagedChannelBuilder.forAddress(lost.hostname, lost.port)
+                        .usePlaintext()
+                        .build();
+                NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+                UpdateNeighbourMsg updateNeighbourMsg = UpdateNeighbourMsg.newBuilder().setAddress(node.getOwn().toAddressMsg()).setIsPrev(msg.getIsPrevBroken()).build();
+                stub.updateConnection(updateNeighbourMsg);
+            } catch (Exception e) {
+                log.error("Topology is severely broken, cannot update neighbours");
+            }
+        }else {
+            NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+            stub.connectionLost(msg);
+            closeChannelProperly(channel);
+        }
     }
 }

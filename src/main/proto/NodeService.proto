@@ -6,7 +6,7 @@ option java_package = "cz.cvut.fel";
 service NodeService{
     rpc join(JoinRequest) returns (JoinResponse);
     rpc sendMessage(DirectMessage) returns (Empty);      // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
-    rpc updateConnection(JoinRequest) returns (Empty);   // Specialni zprava pro zpetecne spojeni
+    rpc updateConnection(UpdateNeighbourMsg) returns (Empty);   // Specialni zprava pro zpetecne spojeni
     rpc broadcastMessage(BroadcastMessage) returns (Empty);
     rpc logOut(LogOutRequest) returns (Empty);
 
@@ -72,3 +72,9 @@ message BrokenTopology {
     AddressMsg brokenNode = 1;
     bool isPrevBroken = 2;
 }
+
+message UpdateNeighbourMsg {
+    AddressMsg address = 1;
+    bool isPrev = 2;
+}
+

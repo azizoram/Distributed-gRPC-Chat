@@ -114,8 +114,8 @@ public class Node implements Runnable{
             channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port).usePlaintext().build();
             stub = NodeServiceGrpc.newBlockingStub(channel);
             delayHandler.handleResponseDelay("updateConnection");
-            request = JoinRequest.newBuilder().setAddress(own.toAddressMsg()).build();
-            stub.updateConnection(request);
+            UpdateNeighbourMsg rq = UpdateNeighbourMsg.newBuilder().setAddress(own.toAddressMsg()).setIsPrev(true).build();
+            stub.updateConnection(rq);
 
             closeChannelProperly(channel);
             log.info("Successfully joined to " + to);
@@ -152,8 +152,12 @@ public class Node implements Runnable{
         }
     }
 
-    public void updatePrev(JoinRequest msg) {
-        myNeighbours.prev = new Address(msg.getAddress());
+    public void updateNeigh(UpdateNeighbourMsg msg) {
+        if (msg.getIsPrev()) {
+            myNeighbours.prev = new Address(msg.getAddress());
+        }else {
+            myNeighbours.next = new Address(msg.getAddress());
+        }
     }
 
     public void sendBroadcastMsg(String command) {
@@ -163,6 +167,8 @@ public class Node implements Runnable{
     public void sendDirectMsg(String command) { chatService.sendDirectMsg(command); }
 
     public void selfLogOut(){
+        log.info("Self log out");
+        log.info("Informing neighbours and isolating, node still functional yet isolated");
         ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
                 .usePlaintext()
                 .build();
