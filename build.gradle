@@ -1,28 +1,40 @@
 plugins {
-    id 'com.github.johnrengelman.shadow' version '5.2.0'
+    // Provide convenience executables for trying out the examples. Also includes java plugin.
+    // https://docs.gradle.org/current/userguide/application_plugin.html
     id 'application'
+    // ASSUMES GRADLE 2.12 OR HIGHER. Use plugin version 0.7.5 with earlier gradle versions
+    // https://github.com/google/protobuf-gradle-plugin
     id 'com.google.protobuf' version '0.8.17'
+    // Generate IntelliJ IDEA's .idea & .iml project files
+    // https://docs.gradle.org/current/userguide/idea_plugin.html
     id 'idea'
 }
 
-application {
-    mainClassName = 'cz.cvut.fel.Main'
+jar {
+    manifest {
+        attributes 'Main-Class': 'cz.cvut.fel.Main'
+//        'Class-Path': configurations.compileClasspath.collect { "lib/$it.name" }.join(' ')
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
 
+// https://docs.gradle.org/current/userguide/declaring_repositories.html
 repositories {
     mavenCentral()
     mavenLocal()
-    maven {
-        url "https://repo.spring.io/release"
-    }
-    maven {
-        url "https://repository.jboss.org/maven2"
-    }
 }
 
+// variable definitions
+def grpcVersion = '1.42.0' // CURRENT_GRPC_VERSION
+def protobufVersion = '3.17.2'
+def protocVersion = protobufVersion
+
+// https://docs.gradle.org/current/userguide/declaring_dependencies.html
 dependencies {
-    implementation "io.grpc:grpc-stub:1.42.0"
-    implementation "io.grpc:grpc-protobuf:1.42.0"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
     compileOnly 'org.projectlombok:lombok:1.18.30'
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     implementation "org.slf4j:slf4j-api:1.7.32"
@@ -30,20 +42,27 @@ dependencies {
 
     testCompileOnly 'org.projectlombok:lombok:1.18.30'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+    //compileOnly "javax.annotation:javax.annotation-api:1.2"
     compileOnly "org.apache.tomcat:annotations-api:6.0.53"
-    runtimeOnly "io.grpc:grpc-netty-shaded:1.42.0"
+    runtimeOnly "io.grpc:grpc-netty-shaded:${grpcVersion}"
 }
 
+// Protobuf plugin configuration
+// // https://github.com/google/protobuf-gradle-plugin
 protobuf {
-    protoc { artifact = "com.google.protobuf:protoc:3.17.2" }
+    protoc { artifact = "com.google.protobuf:protoc:${protocVersion}" }
     plugins {
-        grpc { artifact = "io.grpc:protoc-gen-grpc-java:1.42.0" }
+        grpc { artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}" }
     }
     generateProtoTasks {
-        all()*.plugins { grpc {} }
+        all()*.plugins { grpc {
+            option 'enable_deprecated=false'
+        } }
     }
 }
 
+// Inform IDEs like IntelliJ IDEA, Eclipse or NetBeans about the generated code.
+// https://docs.gradle.org/current/dsl/org.gradle.api.tasks.SourceSet.html
 sourceSets {
     main {
         java {
@@ -55,20 +74,14 @@ sourceSets {
 
 group = 'cz.cvut.fel'
 version = '1.0-SNAPSHOT'
-
-shadowJar {
-    mainClassName = 'cz.cvut.fel.Main'
-    archiveBaseName = 'gRPC_chat_sem-uber'
-    archiveVersion = '1.0-SNAPSHOT'
-    dependencies {
-        include(dependency('io.grpc:grpc-netty-shaded:1.42.0'))
-        include(dependency('io.grpc:grpc-protobuf:1.42.0'))
-        include(dependency('io.grpc:grpc-stub:1.42.0'))
-        include(dependency('org.slf4j:slf4j-api:1.7.32'))
-        include(dependency('ch.qos.logback:logback-classic:1.2.6'))
-        include(dependency('org.projectlombok:lombok:1.18.30'))
+//
+repositories {
+    mavenCentral()
+    maven {
+        url "https://repo.spring.io/release"
     }
-    mergeServiceFiles()
-
+    maven {
+        url "https://repository.jboss.org/maven2"
+    }
 }
-
+//
