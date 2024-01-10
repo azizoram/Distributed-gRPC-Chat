@@ -103,22 +103,24 @@ public class Node implements Runnable{
             delayHandler.handleResponseDelay("join");
             JoinResponse response = stub.join(request);
             myNeighbours.set(response);
+
             closeChannelProperly(channel);
 
             // tell my next he has new prev
             channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port).usePlaintext().build();
+
             stub = NodeServiceGrpc.newBlockingStub(channel);
             delayHandler.handleResponseDelay("updateConnection");
             request = JoinRequest.newBuilder().setAddress(own.toAddressMsg()).build();
             stub.updateConnection(request);
-            closeChannelProperly(channel);
 
+            closeChannelProperly(channel);
         }catch (Exception e){
             log.error("Message listener - something is wrong: " + e.getMessage());
         }
     }
 
-    public void closeChannelProperly(ManagedChannel channel) {
+    public static void closeChannelProperly(ManagedChannel channel) {
         channel.shutdown();
         try {
             // Wait for the channel to be terminated or until a timeout occurs
@@ -158,6 +160,7 @@ public class Node implements Runnable{
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         BroadcastMessage message = BroadcastMessage.newBuilder().setMessage(commandline).setAuthor(uname).build();
         stub.broadcastMessage(message);
+        closeChannelProperly(channel);
     }
     public void passBroadcastMsg(BroadcastMessage msg){
         if (msg.getAuthor().equals(uname)){
@@ -168,6 +171,7 @@ public class Node implements Runnable{
                 .build();
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         stub.broadcastMessage(msg);
+        closeChannelProperly(channel);
     }
 
     public void processMessage(DirectMessage message) {
@@ -186,6 +190,7 @@ public class Node implements Runnable{
                 .build();
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         stub.sendMessage(message);
+        closeChannelProperly(channel);
     }
 
     public void sendDirectMsg(String commandline) {

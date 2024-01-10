@@ -95,7 +95,7 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
         ElectionServiceGrpc.ElectionServiceBlockingStub blockingStub = ElectionServiceGrpc.newBlockingStub(channel);
         blockingStub.tossCall(addressPair);
 
-        node.closeChannelProperly(channel);
+        Node.closeChannelProperly(channel);
     }
 
     private ManagedChannel getChannelToNext() {
@@ -120,7 +120,7 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
         ElectionServiceGrpc.ElectionServiceBlockingStub blockingStub = ElectionServiceGrpc.newBlockingStub(channel);
 //        blockingStub.sendPID(request);
         blockingStub.tossCall(request);
-        node.closeChannelProperly(channel);
+        Node.closeChannelProperly(channel);
     }
 
 
@@ -132,7 +132,7 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
         ManagedChannel channel = getChannelToNext();
         ElectionServiceGrpc.ElectionServiceBlockingStub blockingStub = ElectionServiceGrpc.newBlockingStub(channel);
         blockingStub.sendPID(getIDtoToss());
-        node.closeChannelProperly(channel);
+        Node.closeChannelProperly(channel);
     }
 
     public String getState() {
