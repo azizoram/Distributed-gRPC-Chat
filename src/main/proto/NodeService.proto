@@ -17,6 +17,7 @@ service NodeService{
 service ElectionService{
     rpc sendPID(AddressMsg) returns (Empty);
     rpc tossCall(AddressPair) returns (Empty);
+    rpc sendLeader(AddressPair) returns (Empty);
 }
 
 service TerminationService{

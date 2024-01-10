@@ -44,4 +44,8 @@ public class DSNeighbours implements Serializable {
             this.prev = lost;
         }
     }
+
+    public void setLeader(Address address) {
+        this.leader = address.copy();
+    }
 }
