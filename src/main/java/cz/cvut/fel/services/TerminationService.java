@@ -94,7 +94,6 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
             pass(newToken);
             return;
         }
-//        log.info("Termination detected!!");
         node.sendBroadcastMsg("Termination detected!!");
     }
 
@@ -103,7 +102,7 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
         pass(newToken);
         isBlack = false;
     }
-    private void sendMessageTo(Address other){
+    public void sendMessageTo(Address other){
         if (node.getOwn().compareTo(other) < 0){
             isBlack = true;
         }

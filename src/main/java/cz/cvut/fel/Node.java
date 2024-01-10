@@ -284,7 +284,34 @@ public class Node implements Runnable{
             tryJoin(address);
         } catch (Exception e) {
             log.error("Wrong join command");
+        }
+    }
+
+    public void sendCalculationMsg(String command) {
+        log.info("Sending calculation message to " + command);
+        Address address;
+        try {
+            String[] split = command.split(" ");
+            if (split.length != 3){
+                log.error("Wrong calculation command");
+                return;
+            }
+
+             address = new Address(split[1], Integer.parseInt(split[2]));
+        } catch (Exception e) {
+            log.error("Wrong calculation command");
             return;
+        }
+        terminationService.sendMessageTo(address);
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(address.hostname, address.port)
+                .usePlaintext()
+                .build();
+        try {
+            NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+            stub.ping(Empty.newBuilder().build());
+            closeChannelProperly(channel);
+        }catch (Exception e){
+            log.error("Node on " + address + " is not a part of the network or unreachable");
         }
     }
 }

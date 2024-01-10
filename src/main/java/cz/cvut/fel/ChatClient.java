@@ -30,17 +30,29 @@ public class ChatClient implements Runnable{
             node.handlerSet(commandline);
         } else if (commandline.startsWith("/join")){
             node.handleJoinCommand(commandline);
+        } else if (commandline.startsWith("/calculationMsg")){
+            node.sendCalculationMsg(commandline);
         }
         else if (commandline.startsWith("/logout")) {
             node.selfLogOut();
         } else if(commandline.startsWith("/selfDestruct")){
             node.selfDestruct();
         }
-        else if (commandline.equals("s")) {
+        else if (commandline.startsWith("/status")) {
             node.printStatus();
         } else if (commandline.startsWith("/help")) {
             System.out.print("/help - this help");
-            System.out.print("s - print node status");
+            System.out.print("/status - print node status");
+            System.out.print("/dm <username> <message> - send direct message to user");
+            System.out.print("/elect - start election");
+            System.out.print("/td - detect termination");
+            System.out.print("/setActive - set node active for termination detection");
+            System.out.print("/setPassive - set node passive for termination detection");
+            System.out.print("/set date HH:mm - set election delay until HH:mm");
+            System.out.print("/join <ip> <port> - join to the specific node");
+            System.out.print("/logout - logout from the network");
+            System.out.print("/selfDestruct - destroy the node without informing the network");
+
         } else {
             node.sendBroadcastMsg(commandline);
         }
