@@ -19,7 +19,7 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
     }
 
     public void join(JoinRequest request, StreamObserver<JoinResponse> responseObserver) {
-        System.out.println("123Received join request from: " + request.getName());
+        System.out.println("Received join request from: " + request.getName());
         node.join(request, responseObserver);
         JoinResponse response = JoinResponse.newBuilder().setNext(node.getOwn().toAddressMsg()).setPrev(node.getOwn().toAddressMsg()).build();
 
