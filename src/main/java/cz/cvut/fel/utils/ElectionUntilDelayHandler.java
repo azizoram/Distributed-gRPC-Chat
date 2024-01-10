@@ -5,10 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
-@Slf4j(topic = "bimbam")
+@Slf4j(topic = "main_topic")
 public class ElectionUntilDelayHandler implements DelayHandler {
 
-    private LocalTime targetTime;
+    private LocalTime targetTime = null;
 
     @Override
     public void set(String param, String value) {
@@ -23,7 +23,7 @@ public class ElectionUntilDelayHandler implements DelayHandler {
     @Override
     public void handleRequestDelay(String method) {
         if (targetTime == null
-                && !method.equals("START_ELECTION")
+                || !method.equals("START_ELECTION")
         ) {
             return;
         }

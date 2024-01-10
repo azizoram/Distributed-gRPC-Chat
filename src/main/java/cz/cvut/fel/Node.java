@@ -7,7 +7,6 @@ import cz.cvut.fel.services.ElectionService;
 import cz.cvut.fel.services.TerminationService;
 import cz.cvut.fel.utils.DelayHandler;
 import cz.cvut.fel.utils.ElectionUntilDelayHandler;
-import cz.cvut.fel.utils.NoDelayHandler;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
@@ -20,7 +19,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 @Getter
-@Slf4j(topic = "bimbam")
+@Slf4j(topic = "main_topic")
 public class Node implements Runnable{
     private int id;
     private String uname;
@@ -94,6 +93,7 @@ public class Node implements Runnable{
             System.out.println("Self join requested, seizing");
             return;
         }
+        log.info("Trying to join to " + to);
         try{
 
             ManagedChannel channel = ManagedChannelBuilder.forAddress(to.hostname, to.port)
@@ -118,8 +118,9 @@ public class Node implements Runnable{
             stub.updateConnection(request);
 
             closeChannelProperly(channel);
+            log.info("Successfully joined to " + to);
         }catch (Exception e){
-            log.error("Message listener - something is wrong: " + e.getMessage());
+            log.error("Cannot join to " + to + " because of " + e.getMessage());
         }
     }
 
@@ -137,7 +138,6 @@ public class Node implements Runnable{
         }
     }
     public void join(JoinRequest request, StreamObserver<JoinResponse> responseObserver) {
-        System.out.println("Received join request from: " + request.getName());
         Address externalAddress = new Address(request.getAddress());
         if (myNeighbours.next.compareTo(own) == 0 && myNeighbours.prev.compareTo(own) == 0){
             System.out.println("First join request, setting neighbours");
@@ -260,6 +260,25 @@ public class Node implements Runnable{
             delayHandler.set(split[1], split[2]);
         }catch (Exception e){
             log.error("Wrong set command");
+        }
+    }
+
+    public void handleJoinCommand(String command) {
+        if (myNeighbours.next.compareTo(own) != 0 || myNeighbours.prev.compareTo(own) != 0) {
+            selfLogOut();
+        }
+
+        try {
+            String[] split = command.split(" ");
+            if (split.length != 3){
+                log.error("Wrong join command");
+                return;
+            }
+            Address address = new Address(split[1], Integer.parseInt(split[2]));
+            tryJoin(address);
+        } catch (Exception e) {
+            log.error("Wrong join command");
+            return;
         }
     }
 }

@@ -26,6 +26,10 @@ public class ChatClient implements Runnable{
             node.setActivityStatus(true);
         } else if (commandline.startsWith("/setPassive")) {
             node.setActivityStatus(false);
+        } else if (commandline.startsWith("/set")){
+            node.handlerSet(commandline);
+        } else if (commandline.startsWith("/join")){
+            node.handleJoinCommand(commandline);
         }
         else if (commandline.startsWith("/logout")) {
             node.selfLogOut();

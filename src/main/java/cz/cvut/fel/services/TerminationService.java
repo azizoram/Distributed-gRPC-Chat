@@ -18,7 +18,7 @@ import static cz.cvut.fel.utils.NodeUtils.respondEmpty;
 
 // A service responsible for handling termination based on Dijkstra, Feijen, Van Gasteren algorithm
 
-@Slf4j(topic = "bimbam")
+@Slf4j(topic = "main_topic")
 public class TerminationService extends TerminationServiceGrpc.TerminationServiceImplBase {
     @Getter
     private boolean isPassive = false;
@@ -60,6 +60,10 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
 
     private void pass(Token token) {
         ManagedChannel channel = NodeUtils.openChannelToPrev(node, true);
+        if (channel == null){
+            log.error("Topology broken, cannot pass token");
+            return;
+        }
         TerminationServiceGrpc.TerminationServiceBlockingStub stub = TerminationServiceGrpc.newBlockingStub(channel);
         stub.detectTermination(token);
         Node.closeChannelProperly(channel);

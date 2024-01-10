@@ -15,6 +15,7 @@ public class NodeUtils {
                 .build();
         if (checkConnectivity && node.isChannelDead(channel)){
             node.prevBroken();
+            channel = null;
         }
         return channel;
     }
@@ -31,6 +32,7 @@ public class NodeUtils {
                 .build();
         if (checkConnectivity && node.isChannelDead(channel)){
             node.nextBroken();
+            channel = null;
         }
         return channel;
     }

@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import static cz.cvut.fel.Node.closeChannelProperly;
 import static cz.cvut.fel.utils.NodeUtils.respondEmpty;
 
-@Slf4j(topic = "bimbam")
+@Slf4j(topic = "main_topic")
 public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
     public static final int MAX_HOP_COUNT = 255;
     Node node;
@@ -19,7 +19,7 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
     }
 
     public void join(JoinRequest request, StreamObserver<JoinResponse> responseObserver) {
-        System.out.println("Received join request from: " + request.getName());
+        log.info("Received join request from: " + request.getName());
         node.join(request, responseObserver);
         JoinResponse response = JoinResponse.newBuilder().setNext(node.getOwn().toAddressMsg()).setPrev(node.getOwn().toAddressMsg()).build();
 
@@ -48,6 +48,10 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
         message = message.toBuilder().setHopCount(message.getHopCount() - 1).build();
 
         ManagedChannel channel = NodeUtils.openChannelToNext(node, true);
+        if (channel == null){
+            log.error("Topology broken, cannot pass direct message");
+            return;
+        }
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         stub.sendMessage(message);
         closeChannelProperly(channel);
@@ -61,7 +65,7 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
     }
 
     public void updateConnection(JoinRequest msg, StreamObserver<Empty> responseObserver){
-        System.out.println("New previous node:" + msg.getAddress());
+        log.info("New previous node:" + msg.getAddress());
         sendEmptyResponse(responseObserver);
 
         node.updatePrev(msg);
@@ -83,6 +87,10 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
             return;
         }
         ManagedChannel channel = NodeUtils.openChannelToNext(node, true);
+        if (channel == null){
+            log.error("Topology broken, cannot pass broadcast message");
+            return;
+        }
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         msg = msg.toBuilder().setHopCount(msg.getHopCount() - 1).build();
         stub.broadcastMessage(msg);
@@ -96,6 +104,10 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
 
     public void sendBroadcastMsg(String commandline) {
         ManagedChannel channel = NodeUtils.openChannelToNext(node,true);
+        if (channel == null){
+            log.error("Topology broken, cannot send broadcast message");
+            return;
+        }
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         BroadcastMessage message = BroadcastMessage.newBuilder().setMessage(commandline).setAuthor(node.getUname()).setHopCount(MAX_HOP_COUNT).build();
         stub.broadcastMessage(message);
@@ -111,6 +123,10 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
         String recipient = split[1];
         String message = split[2];
         ManagedChannel channel = NodeUtils.openChannelToNext(node,true);
+        if (channel == null){
+            log.error("Topology broken, cannot send direct message");
+            return;
+        }
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         DirectMessage msg = DirectMessage.newBuilder().setMessage(message).setAuthor(node.getUname()).setRecipient(recipient).setReceived(false).setHopCount(MAX_HOP_COUNT).build();
         stub.sendMessage(msg);
@@ -122,16 +138,18 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
         respondEmpty(responseObserver);
     }
     public void topologyBroken(boolean isPrevBroken) {
-        if (node.getPrevAddr() == node.getNextAddr() && node.getPrevAddr() == node.getOwn()){
-            log.info("Node isolated out of the network");
-            return;
-        }
         ManagedChannel channel;
         if (isPrevBroken) {
-            channel = NodeUtils.openChannelToNext(node, false);
+            channel = NodeUtils.openChannelToNext(node, true);
         } else {
-            channel = NodeUtils.openChannelToPrev(node, false);
+            channel = NodeUtils.openChannelToPrev(node, true);
         }
+
+        if (node.getPrevAddr().compareTo(node.getNextAddr()) == 0 && node.getPrevAddr().compareTo( node.getOwn() ) == 0){
+            log.info("Node is isolated out of the network!");
+            return;
+        }
+
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         try {
             stub.ping(Empty.newBuilder().build());

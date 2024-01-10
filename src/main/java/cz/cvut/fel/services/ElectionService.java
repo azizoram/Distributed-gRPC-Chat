@@ -9,7 +9,7 @@ import cz.cvut.fel.utils.NodeUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j(topic = "bimbam")
+@Slf4j(topic = "main_topic")
 public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase{
     private Node node;
     private Address tid;
