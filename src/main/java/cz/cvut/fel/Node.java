@@ -6,6 +6,7 @@ import cz.cvut.fel.services.ChatService;
 import cz.cvut.fel.services.ElectionService;
 import cz.cvut.fel.services.TerminationService;
 import cz.cvut.fel.utils.DelayHandler;
+import cz.cvut.fel.utils.ElectionUntilDelayHandler;
 import cz.cvut.fel.utils.NoDelayHandler;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -39,7 +40,7 @@ public class Node implements Runnable{
         this.uname = uname;
         this.own = own.copy();
         this.myNeighbours = new DSNeighbours(own);
-        this.delayHandler = new NoDelayHandler();
+        this.delayHandler = new ElectionUntilDelayHandler();
     }
 
     private int generateId(String uname, Address own) {
@@ -155,11 +156,11 @@ public class Node implements Runnable{
         myNeighbours.prev = new Address(msg.getAddress());
     }
 
-    public void sendBroadcastMsg(String commandline) {
-        chatService.sendBroadcastMsg(commandline);
+    public void sendBroadcastMsg(String command) {
+        chatService.sendBroadcastMsg(command);
     }
 
-    public void sendDirectMsg(String commandline) { chatService.sendDirectMsg(commandline); }
+    public void sendDirectMsg(String command) { chatService.sendDirectMsg(command); }
 
     public void selfLogOut(){
         ManagedChannel channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port)
@@ -192,6 +193,7 @@ public class Node implements Runnable{
     }
 
     public void startElection() {
+        delayHandler.handleRequestDelay("START_ELECTION");
         electionService.tossElection();
         log.debug("Starting election");
     }
@@ -246,5 +248,18 @@ public class Node implements Runnable{
     public void nextBroken() {
         myNeighbours.next = own.copy();
         chatService.topologyBroken(false);
+    }
+
+    public void handlerSet(String command) {
+        try {
+            String[] split = command.split(" ");
+            if (split.length != 3){
+                log.error("Wrong set command");
+                return;
+            }
+            delayHandler.set(split[1], split[2]);
+        }catch (Exception e){
+            log.error("Wrong set command");
+        }
     }
 }
