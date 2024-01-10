@@ -9,6 +9,9 @@ service NodeService{
     rpc updateConnection(JoinRequest) returns (Empty);   // Specialni zprava pro zpetecne spojeni
     rpc broadcastMessage(BroadcastMessage) returns (Empty);
     rpc logOut(LogOutRequest) returns (Empty);
+
+    rpc ping(Empty) returns (Empty);
+    rpc connectionLost(BrokenTopology) returns (Empty);
 }
 
 service ElectionService{
@@ -63,4 +66,9 @@ message AddressPair {
 
 message Token {
     bool isBlack = 1;
+}
+
+message BrokenTopology {
+    AddressMsg brokenNode = 1;
+    bool isPrevBroken = 2;
 }

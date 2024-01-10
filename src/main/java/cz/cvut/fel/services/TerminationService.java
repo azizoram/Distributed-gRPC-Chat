@@ -59,7 +59,7 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
     }
 
     private void pass(Token token) {
-        ManagedChannel channel = NodeUtils.openChannelToPrev(node);
+        ManagedChannel channel = NodeUtils.openChannelToPrev(node, true);
         TerminationServiceGrpc.TerminationServiceBlockingStub stub = TerminationServiceGrpc.newBlockingStub(channel);
         stub.detectTermination(token);
         Node.closeChannelProperly(channel);

@@ -7,7 +7,6 @@ import cz.cvut.fel.services.ElectionService;
 import cz.cvut.fel.services.TerminationService;
 import cz.cvut.fel.utils.DelayHandler;
 import cz.cvut.fel.utils.NoDelayHandler;
-import cz.cvut.fel.utils.NodeUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
@@ -95,9 +94,12 @@ public class Node implements Runnable{
             return;
         }
         try{
+
             ManagedChannel channel = ManagedChannelBuilder.forAddress(to.hostname, to.port)
                     .usePlaintext()
                     .build();
+            channel.getState(true);
+
             NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
             AddressMsg addressMsg = AddressMsg.newBuilder().setIpAddress(own.hostname).setPort(own.port).build();
             JoinRequest request = JoinRequest.newBuilder().setName(uname).setAddress(addressMsg).build();
@@ -109,7 +111,6 @@ public class Node implements Runnable{
 
             // tell my next he has new prev
             channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port).usePlaintext().build();
-
             stub = NodeServiceGrpc.newBlockingStub(channel);
             delayHandler.handleResponseDelay("updateConnection");
             request = JoinRequest.newBuilder().setAddress(own.toAddressMsg()).build();
@@ -224,5 +225,26 @@ public class Node implements Runnable{
             i--;
         }
         System.exit(0);
+    }
+
+    public boolean isChannelDead(ManagedChannel channel) {
+        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+        try{
+            stub.ping(Empty.newBuilder().build());
+            return false;
+        }catch (Exception e){
+            log.debug("Given channel is dead");
+            return true;
+        }
+    }
+
+    public void prevBroken() {
+        myNeighbours.prev = own.copy();
+        chatService.topologyBroken(true);
+    }
+
+    public void nextBroken() {
+        myNeighbours.next = own.copy();
+        chatService.topologyBroken(false);
     }
 }
