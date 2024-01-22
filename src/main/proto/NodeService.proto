@@ -20,6 +20,7 @@ service NodeService{
 
     rpc ping(Empty) returns (Empty);
     rpc connectionLost(BrokenTopology) returns (Empty);
+    rpc zfotalZapisal(NodeJoined) returns (Empty);
 }
 
 service ElectionService{
@@ -30,6 +31,13 @@ service ElectionService{
 
 service TerminationService{
     rpc detectTermination(Token) returns (Empty);
+}
+
+message NodeJoined {
+    AddressMsg address = 1;
+    string uname = 2;
+    AddressMsg prev = 3;
+    AddressMsg next = 4;
 }
 
 message AddressMsg {

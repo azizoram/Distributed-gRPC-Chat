@@ -13,6 +13,10 @@ import java.util.Map;
 public class LocalLeader extends AbstractLdr{ // the node itself is a leader
     private Map<String, Address> addressMap = new HashMap<String, Address>();
 
+    public LocalLeader(Node node){
+        super(node);
+        addressMap.put(node.getUname(), node.getOwn());
+    }
     public boolean checkPresence(){return true;}
 
     @Override
@@ -46,9 +50,11 @@ public class LocalLeader extends AbstractLdr{ // the node itself is a leader
     }
 
     @Override
-    public void addAddress(String uname, Address address) {
-
+    public void nodeHasJoined(NodeJoined nodeJoined) {
+        Address address = new Address(nodeJoined.getAddress());
+        addressMap.put(nodeJoined.getUname(), address);
     }
+
 
     @Override
     public boolean find(String recipient) {
@@ -56,9 +62,6 @@ public class LocalLeader extends AbstractLdr{ // the node itself is a leader
         // ping len' TODO
     }
 
-    public LocalLeader(Node node) {
-        super(node);
-    }
     void sendDirectTo(String to, String msg, String author){
 
         Address recipient = addressMap.getOrDefault(to, null);

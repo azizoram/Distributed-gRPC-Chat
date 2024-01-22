@@ -33,7 +33,7 @@ public abstract class AbstractLdr {
     public abstract void sendMessage(BroadcastMessage msg);
     public abstract void sendMessage(DirectMessage msg);
 
-    public abstract void addAddress(String uname, Address address);
+    public abstract void nodeHasJoined(NodeJoined nodeJoined);
 
     public abstract boolean find(String recipient);
 }

@@ -1,9 +1,6 @@
 package cz.cvut.fel.leader;
 
-import cz.cvut.fel.BroadcastMessage;
-import cz.cvut.fel.DirectMessage;
-import cz.cvut.fel.Node;
-import cz.cvut.fel.NodeServiceGrpc;
+import cz.cvut.fel.*;
 import cz.cvut.fel.model.Address;
 import cz.cvut.fel.utils.NodeUtils;
 import io.grpc.ManagedChannel;
@@ -31,8 +28,19 @@ public class RemoteLeader extends AbstractLdr{
     }
 
     @Override
-    public void addAddress(String uname, Address address) {
-
+    public void nodeHasJoined(NodeJoined nodeJoined) {
+        // gbie
+        // surrond with try catch block
+        // open channel to leader
+        // invoker zfotalZapisal method
+        try{
+            ManagedChannel channel = NodeUtils.openChannelTo(node.getMyNeighbours().leader);
+            NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
+            stub.zfotalZapisal(nodeJoined);
+            Node.closeChannelProperly(channel);
+        } catch (Exception e){
+            Node.leaderNotFound();
+        }
     }
 
     @Override

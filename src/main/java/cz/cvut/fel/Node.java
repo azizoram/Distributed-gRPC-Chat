@@ -47,6 +47,9 @@ public class Node implements Runnable{
         this.leader = new LocalLeader(this);
     }
 
+    public static void leaderNotFound() {
+    }
+
     private int generateId(String uname, Address own) {
         return (uname + own.toString()).hashCode();
     }
@@ -55,7 +58,7 @@ public class Node implements Runnable{
         // Respond new node with their neighbrs
         AddressMsg msg_next = myNeighbours.next.toAddressMsg();
         AddressMsg msg_prev = own.toAddressMsg();
-        JoinResponse joinResponse = JoinResponse.newBuilder().setNext(msg_next).setPrev(msg_prev).build();
+        JoinResponse joinResponse = JoinResponse.newBuilder().setNext(msg_next).setPrev(msg_prev).setLeader(myNeighbours.leader.toAddressMsg()).build();
         responseObserver.onNext(joinResponse);
         responseObserver.onCompleted();
 
@@ -112,9 +115,8 @@ public class Node implements Runnable{
             delayHandler.handleResponseDelay("join");
             JoinResponse response = stub.join(request);
             myNeighbours.set(response);
-
             closeChannelProperly(channel);
-
+            notifyLeader();
             // tell my next he has new prev
             channel = ManagedChannelBuilder.forAddress(myNeighbours.next.hostname, myNeighbours.next.port).usePlaintext().build();
             stub = NodeServiceGrpc.newBlockingStub(channel);
@@ -157,8 +159,11 @@ public class Node implements Runnable{
         }
     }
 
-    public void notifyLeader(String uname, Address address){
-        leader.addAddress(uname, address);
+    public void notifyLeader(){
+        //TODO                               
+        NodeJoined nodeJoined = NodeJoined.newBuilder().setAddress(own.toAddressMsg()).setUname(uname)
+                .setNext(myNeighbours.next.toAddressMsg()).setPrev(myNeighbours.prev.toAddressMsg()).build();
+        this.getLeader().nodeHasJoined(nodeJoined);
     }
 
     public void updateNeigh(UpdateNeighbourMsg msg) {

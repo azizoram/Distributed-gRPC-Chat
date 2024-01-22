@@ -8,6 +8,9 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import static cz.cvut.fel.Node.closeChannelProperly;
 import static cz.cvut.fel.utils.NodeUtils.respondEmpty;
 
@@ -71,13 +74,20 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
     }
 
     public void sendDirectMsg(String commandline) {
-
+        String[] split = commandline.split(" ");
+        if (split.length < 3){
+            System.out.println("Usage: /dm <recipient> <message>");
+            return;
+        }
+        String recipient = split[1];
+        String message = Arrays.stream(split).skip(2).collect(Collectors.joining(" "));
+        DirectMessage msg = DirectMessage.newBuilder().setMessage(message).setAuthor(node.getUname()).setRecipient(recipient).build();
+        node.getLeader().sendMessage(msg);
     }
 
     public void receiveMessage(Message msg, StreamObserver<Empty> emptyStreamObserver){
-
-        emptyStreamObserver.onNext(Empty.newBuilder().build());
-        emptyStreamObserver.onCompleted();
+        respondEmpty(emptyStreamObserver);
+        node.getChatClient().receiveMsg(msg);
     }
 
     public void ping(Empty empty, StreamObserver<Empty> responseObserver) {
@@ -110,6 +120,11 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
         BrokenTopology msg = BrokenTopology.newBuilder().setIsPrevBroken(isPrevBroken).setBrokenNode(node.getOwn().toAddressMsg()).build();
         stub.connectionLost(msg);
         closeChannelProperly(channel);
+    }
+
+    public void zfotalZapisal(NodeJoined message, StreamObserver<Empty> responseObserver) {
+        sendEmptyResponse(responseObserver);
+        node.getLeader().nodeHasJoined(message);
     }
 
     public void connectionLost(BrokenTopology msg, StreamObserver<Empty> responseObserver) {

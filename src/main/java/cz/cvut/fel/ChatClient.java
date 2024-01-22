@@ -77,12 +77,8 @@ public class ChatClient implements Runnable{
         System.out.println("Closing chat client.");
     }
 
-    public void reciveBcastMsg(BroadcastMessage msg) {
-        System.out.println("B!" + msg.getAuthor() + " : " + msg.getMessage());
-    }
-
-    public void receiveDirectMsg(DirectMessage message) {
-        System.out.println("D!" + message.getAuthor() + " : " + message.getMessage());
+    public void receiveMsg(Message msg){
+        System.out.println((msg.getIsBcast()?"B! ":"D! ") + msg.getAuthor() + " : " + msg.getMessage());
     }
 
     public void failedDirectMsg(DirectMessage message) {
