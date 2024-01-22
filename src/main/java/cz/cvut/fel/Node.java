@@ -214,7 +214,9 @@ public class Node implements Runnable{
 
     public void startElection() {
         delayHandler.handleRequestDelay("START_ELECTION");
-        electionService.tossElection();
+
+//        electionService.tossElection(); <- starts erection
+        electionService.tryElect();
         log.debug("Starting election");
     }
 
