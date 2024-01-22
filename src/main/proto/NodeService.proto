@@ -5,9 +5,17 @@ option java_package = "cz.cvut.fel";
 
 service NodeService{
     rpc join(JoinRequest) returns (JoinResponse);
-    rpc sendMessage(DirectMessage) returns (Empty);      // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
     rpc updateConnection(UpdateNeighbourMsg) returns (Empty);   // Specialni zprava pro zpetecne spojeni
+
+    rpc sendMessage(DirectMessage) returns (DMStatus);      // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
     rpc broadcastMessage(BroadcastMessage) returns (Empty);
+
+    rpc receiveMessage(Message) returns (Empty);
+//    Message contains isBcast bool, bcast or dm
+
+//    Node sendMessage -> Leader, Leader reciveMessage -> Recpient(s)
+//            dmStatus <- Uname not found/ok bool
+
     rpc logOut(LogOutRequest) returns (Empty);
 
     rpc ping(Empty) returns (Empty);
@@ -34,18 +42,25 @@ message JoinRequest {
     AddressMsg address = 2;
 }
 
+message Message{
+    string author = 1;
+    string message = 2;
+    bool isBcast = 3;
+}
+
 message DirectMessage {
     string author = 1;
     string message = 2;
     string recipient = 3;
-    bool received = 4;
-    int32 hopCount = 5;
 }
 
 message BroadcastMessage {
     string author = 1;
     string message = 2;
-    int32 hopCount = 3;
+}
+
+message DMStatus{
+    bool msgReceived = 1;
 }
 
 message Empty {}
@@ -53,6 +68,7 @@ message Empty {}
 message JoinResponse {
     AddressMsg next = 1;
     AddressMsg prev = 2;
+    AddressMsg leader = 3; // 0.0.0.0 0000 <- leader unset
 }
 
 message LogOutRequest {

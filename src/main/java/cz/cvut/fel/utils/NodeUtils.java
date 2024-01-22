@@ -36,4 +36,8 @@ public class NodeUtils {
         }
         return channel;
     }
+
+    public static ManagedChannel openChannelTo(Address leader) {
+        return ManagedChannelBuilder.forAddress(leader.hostname, leader.port).usePlaintext().build();
+    }
 }

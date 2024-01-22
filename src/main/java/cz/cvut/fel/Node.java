@@ -1,5 +1,8 @@
 package cz.cvut.fel;
 
+import cz.cvut.fel.leader.AbstractLdr;
+import cz.cvut.fel.leader.LocalLeader;
+import cz.cvut.fel.leader.RemoteLeader;
 import cz.cvut.fel.model.Address;
 import cz.cvut.fel.model.DSNeighbours;
 import cz.cvut.fel.services.ChatService;
@@ -34,12 +37,14 @@ public class Node implements Runnable{
 //    private ManagedChannel channel;// ?? outwards
     private Server server;// ?? inwards
     private Thread chatClientThread;
+    private AbstractLdr leader; // unset? actualizirovat each time ldr changes
     public Node(String uname, Address own){
         this.id = generateId(uname, own);
         this.uname = uname;
         this.own = own.copy();
-        this.myNeighbours = new DSNeighbours(own);
+        this.myNeighbours = new DSNeighbours(own, this);
         this.delayHandler = new ElectionUntilDelayHandler();
+        this.leader = new LocalLeader(this);
     }
 
     private int generateId(String uname, Address own) {
@@ -145,11 +150,15 @@ public class Node implements Runnable{
             AddressMsg prev = own.toAddressMsg();
             myNeighbours.next = externalAddress.copy();
             myNeighbours.prev = externalAddress.copy();
-            responseObserver.onNext(JoinResponse.newBuilder().setNext(next).setPrev(prev).build());
+            responseObserver.onNext(JoinResponse.newBuilder().setNext(next).setPrev(prev).setLeader(myNeighbours.leader.toAddressMsg()).build());
             responseObserver.onCompleted();
         } else {
             updateTopology(externalAddress, responseObserver);
         }
+    }
+
+    public void notifyLeader(String uname, Address address){
+        leader.addAddress(uname, address);
     }
 
     public void updateNeigh(UpdateNeighbourMsg msg) {
@@ -313,5 +322,13 @@ public class Node implements Runnable{
         }catch (Exception e){
             log.error("Node on " + address + " is not a part of the network or unreachable");
         }
+    }
+
+    public void LdrChangedTo(Address address) {
+        leader = (address.compareTo(own)==0) ?
+                new LocalLeader(this)
+            :
+                new RemoteLeader(this);
+
     }
 }
