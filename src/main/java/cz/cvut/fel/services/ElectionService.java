@@ -49,81 +49,77 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
         blockingStub.sendLeader(leaderMsg);
         Node.closeChannelProperly(channel);
     }
-    @Override
-    public void sendPID(AddressMsg request, StreamObserver<Empty> responseObserver) {
-        log.debug("pid request" + new Address(request));
+
+    public void passNTID(AddressMsg request, StreamObserver<Empty> responseObserver){
         NodeUtils.respondEmpty(responseObserver);
-        handleHandshakes(request);
+        ManagedChannel channel = openChannelToNext(node, true);
+        ElectionServiceGrpc.ElectionServiceBlockingStub stub = ElectionServiceGrpc.newBlockingStub(channel);
+        nntid = null;
+        if (state == ElectionState.RELAY) {
+            stub.passNTID(request);
+        }else if (ntid != null){
+            stub.passNNTID(ntid.toAddressMsg());
+        }else {
+            ntid = new Address(request);
+            stub.passNTID(tid.toAddressMsg());
+        }
+        Node.closeChannelProperly(channel);
     }
 
     @Override
-    public void tossCall(AddressPair request, StreamObserver<Empty> responseObserver) {
+    public void passNNTID(AddressMsg request, StreamObserver<Empty> responseObserver) {
         NodeUtils.respondEmpty(responseObserver);
-        switch (state){
-            case ACTIVE:
-                handleActive(request);
-                break;
-            case RELAY:
-                handleRelay(request);
-                break;
-            case LEADER:
-                break;
+        ManagedChannel channel = openChannelToNext(node, true);
+        ElectionServiceGrpc.ElectionServiceBlockingStub stub = ElectionServiceGrpc.newBlockingStub(channel);
+
+        if(state==ElectionState.RELAY){
+            stub.passNNTID(request);
+        }else if (nntid != null){
+            stub.passNTID(tid.toAddressMsg());
+        }else{
+            nntid = new Address(request);
+            AddressMsg nntidmsg = ntid.toAddressMsg();
+            if(handleGeorgeKlic()){
+                stub.passNNTID(nntidmsg);
+            }
         }
+        Node.closeChannelProperly(channel);
     }
 
-    private void handleActive(AddressPair request) {
-        AddressPair addressPair = AddressPair.newBuilder().setNtid(ntid.toAddressMsg()).setNntid(nntid.toAddressMsg()).build();
-        ntid = new Address(request.getNtid());
-        nntid = new Address(request.getNntid());
-        ElectionRound(addressPair);
+    // handle george klic
+    // node has actual ntid and nntid pair and can do bingo byngo bongo
+    private boolean handleGeorgeKlic(){
+        if (this.ntid.compareTo(tid) == 0){
+            becameLeader();
+            return false;
+        }
+
+        if (ntid.compareTo(getMax()) == 0){
+            tid = ntid;
+        }else {
+            becameRelay();
+        }
+        ntid=null;
+        return true;
     }
 
-    public void handleHandshakes(AddressMsg request){
-        Address neighborAddress = new Address(request);
-
-        if (this.ntid == null) {
-            this.ntid = neighborAddress;
-            log.debug("Setting ntid to "+ neighborAddress);
-            tossElection();
-        } else if (this.nntid == null) {
-            this.nntid = neighborAddress;
-            log.debug("Setting nntid to "+ neighborAddress);
-            tossElection();
-        } else {
-            ElectionRound(null);//
-        }
+    private void becameRelay() {
+        this.state = ElectionState.RELAY;
+        log.info("Switching state to relay");
     }
 
-    public void ElectionRound(AddressPair addressPair){
-        if (this.ntid.compareTo(tid) == 0){ // compare to
-            this.state = ElectionState.LEADER;
-            log.info("Switching state to leader");
-            node.sendBroadcastMsg("I am the leader");
-            AddressPair leadermsg = AddressPair.newBuilder()
-                    .setNtid(node.getOwn().toAddressMsg())
-                    .setNntid(node.getOwn().toAddressMsg())
-                    .build();
+    private void becameLeader() {
+        this.state = ElectionState.LEADER;
+        log.info("Switching state to leader");
+        node.sendBroadcastMsg("I am the leader");
+        AddressPair leadermsg = AddressPair.newBuilder()
+                .setNtid(node.getOwn().toAddressMsg())
+                .setNntid(node.getOwn().toAddressMsg())
+                .build();
 
-            node.getMyNeighbours().setLeader(node.getOwn());
-            host = null;
-            informLeaderElected(leadermsg);
-
-            // change inform reaction
-            log.info("Leader has been elected. Node " + node.getUname() + " is the leader.");
-            //TODO Finish election
-        }
-        if (this.ntid.compareTo(getMax()) == 0){ // compare to
-            this.tid = ntid;
-            log.info("Owning ntid");
-        } else {
-            this.state = ElectionState.RELAY;
-            log.info("Switching state to relay");
-        }
-        if (addressPair == null){
-            addressPair = AddressPair.newBuilder().setNtid(tid.toAddressMsg()).setNntid(ntid.toAddressMsg()).build();
-        }
-
-        tossPair(addressPair);
+        node.getMyNeighbours().setLeader(node.getOwn());
+        host = null;
+        informLeaderElected(leadermsg);
     }
 
     public void informElection(AddressMsg message, StreamObserver<Empty> responseObserver){
@@ -138,7 +134,7 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
         } else if (electionHost.compareTo(host) == 0){ // circle ended
             // Election started
             log.info("Election started");
-            tossElection();
+            startElection();
         } // weaker host do nothing
 
     }
@@ -184,15 +180,10 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
         Node.closeChannelProperly(channel);
     }
 
-
-    private AddressMsg getIDtoToss(){
-        return ((nntid==null)? tid:ntid).toAddressMsg();
-    }
-
-    public void tossElection(){
+    public void startElection(){
         ManagedChannel channel = openChannelToNext(node, true);
         ElectionServiceGrpc.ElectionServiceBlockingStub blockingStub = ElectionServiceGrpc.newBlockingStub(channel);
-        blockingStub.sendPID(getIDtoToss());
+        blockingStub.passNTID(this.tid.toAddressMsg());
         Node.closeChannelProperly(channel);
     }
 

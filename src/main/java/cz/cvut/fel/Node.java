@@ -135,7 +135,7 @@ public class Node implements Runnable{
         channel.shutdown();
         try {
             // Wait for the channel to be terminated or until a timeout occurs
-            if (!channel.awaitTermination(350, TimeUnit.MILLISECONDS)) {
+            if (!channel.awaitTermination(150, TimeUnit.MILLISECONDS)) {
                 // Forceful shutdown if it takes too long
                 channel.shutdownNow();
             }
