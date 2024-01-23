@@ -94,7 +94,6 @@ public class Node implements Runnable{
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        tryJoin(new Address("localhost", 2010));
         (chatClientThread = new Thread(chatClient)).start();
     }
 
