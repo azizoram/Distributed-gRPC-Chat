@@ -19,13 +19,17 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
     private Address nntid;
     private ElectionState state;
     private Address host = null;
-    private final Address sneaky = new Address("0.0.0.0", 0);
+    private final Address sneaky;
 
     public ElectionService(Node node){
         this.node = node;
         this.tid = node.getOwn();
         this.state = ElectionState.ACTIVE;
 //        resetElection();
+
+        this.sneaky = new Address("0.0.0.0",
+                (int) (Math.random() * Integer.MAX_VALUE)
+                ); // make port different for different nodes
     }
 
     private void resetElection() {
