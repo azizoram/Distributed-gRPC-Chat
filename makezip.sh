@@ -1,5 +1,7 @@
 #!/bin/bash
 
+rm -rf grpc_chat_dsv-master grpc_chat_dsv-master.zip
+
 # Set the URL to the zip file
 download_url="https://gitlab.fel.cvut.cz/azizoram/grpc_chat_dsv/-/archive/master/grpc_chat_dsv-master.zip"
 
@@ -17,9 +19,6 @@ unzip "$zip_file"
 
 # Navigate into the extracted directory
 cd "$extract_dir"
-
-# Navigate into the grpc_chat_dsv directory
-cd grpc_chat_dsv
 
 # Launch the build script
 ./build.sh

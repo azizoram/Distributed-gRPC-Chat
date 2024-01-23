@@ -1,0 +1,1 @@
+./run.sh Glubokoslav "$1" 6090
