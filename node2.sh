@@ -1,0 +1,1 @@
+./run.sh ChRamir "$2" 3030

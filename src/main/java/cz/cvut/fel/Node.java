@@ -79,6 +79,7 @@ public class Node implements Runnable{
 
     @Override
     public void run() {
+        log.info("Starting node " + uname + " with address " + own);
         id = generateId(uname, own);
         chatClient = new ChatClient(this);
         chatService = new ChatService(this); // service needed? mb not, probably not

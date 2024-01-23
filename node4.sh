@@ -1,0 +1,1 @@
+./run.sh VyacheslavDruhy "$1" 5050
