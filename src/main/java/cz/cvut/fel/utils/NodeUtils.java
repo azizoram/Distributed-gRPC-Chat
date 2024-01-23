@@ -44,11 +44,12 @@ public class NodeUtils {
     }
 
     public static void holdThreadFor(long milis, Predicate<Void> waitingCondition){
+
         boolean waiting = true;
         long started = System.currentTimeMillis();
         long timeoutMs = 950;
         while(waiting){
-            waiting = waitingCondition.test(null) && ((System.currentTimeMillis() - started) < timeoutMs);
+                waiting = waitingCondition.test(null) && ((System.currentTimeMillis() - started) < timeoutMs);
         }
 
     }

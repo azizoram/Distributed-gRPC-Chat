@@ -10,6 +10,7 @@ import cz.cvut.fel.services.ElectionService;
 import cz.cvut.fel.services.TerminationService;
 import cz.cvut.fel.utils.DelayHandler;
 import cz.cvut.fel.utils.ElectionUntilDelayHandler;
+import cz.cvut.fel.utils.NodeUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
@@ -135,13 +136,20 @@ public class Node implements Runnable{
 
     public static void closeChannelProperly(ManagedChannel channel) {
         channel.shutdown();
+
         try {
+            NodeUtils.holdThreadFor(750, (ignrd)->
+                    {try
+                        {return channel.awaitTermination(150, TimeUnit.MILLISECONDS);}
+                    catch (Exception e){
+                        return true;
+                    }}
+            );
+
             // Wait for the channel to be terminated or until a timeout occurs
-            if (!channel.awaitTermination(150, TimeUnit.MILLISECONDS)) {
                 // Forceful shutdown if it takes too long
-                channel.shutdownNow();
-            }
-        } catch (InterruptedException e) {
+            channel.shutdownNow();
+        } catch (Exception e) {
             log.error("Thread interrupted while waiting for channel termination", e);
             Thread.currentThread().interrupt(); // Preserve interrupted status
         }
