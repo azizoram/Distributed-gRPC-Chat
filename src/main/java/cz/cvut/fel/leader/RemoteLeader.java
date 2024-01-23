@@ -2,6 +2,7 @@ package cz.cvut.fel.leader;
 
 import cz.cvut.fel.*;
 import cz.cvut.fel.model.Address;
+import cz.cvut.fel.services.TerminationService;
 import cz.cvut.fel.utils.NodeUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -53,10 +54,6 @@ public class RemoteLeader extends AbstractLdr{
 
     @Override
     public void nodeHasJoined(NodeJoined nodeJoined) {
-        // gbie
-        // surrond with try catch block
-        // open channel to leader
-        // invoker zfotalZapisal method
         try{
             ManagedChannel channel = NodeUtils.openChannelTo(node.getMyNeighbours().leader);
             NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
@@ -69,7 +66,39 @@ public class RemoteLeader extends AbstractLdr{
 
     @Override
     public boolean find(String recipient) {
-        return true; // TODO TODO
+        ManagedChannel channel = NodeUtils.openChannelTo(node.getMyNeighbours().leader);
+        channel = checkChannel(channel);
+        if (channel == null) return false;
+        TerminationServiceGrpc.TerminationServiceBlockingStub stub = TerminationServiceGrpc.newBlockingStub(channel);
+        StringMsg msg = stub.askHash(Empty.newBuilder().build());
+        Node.closeChannelProperly(channel);
+        handleUpdateAddressBook(msg);
+        return addressMap.containsKey(recipient);
+    }
+
+    @Override
+    public void updateAddressBook() {
+        ManagedChannel channel = NodeUtils.openChannelTo(node.getMyNeighbours().leader);
+        channel = checkChannel(channel);
+        if (channel == null) return;
+        TerminationServiceGrpc.TerminationServiceBlockingStub stub = TerminationServiceGrpc.newBlockingStub(channel);
+        StringMsg msg = stub.askHash(Empty.newBuilder().build());
+        handleUpdateAddressBook(msg);
+        Node.closeChannelProperly(channel);
+    }
+
+    private void handleUpdateAddressBook(StringMsg msg) {
+        if (msg.getMsg().equals(hash)) return;
+        addressMap.clear();
+        ManagedChannel channel = NodeUtils.openChannelTo(node.getMyNeighbours().leader);
+        channel = checkChannel(channel);
+        if (channel == null) return;
+        TerminationServiceGrpc.TerminationServiceBlockingStub stub = TerminationServiceGrpc.newBlockingStub(channel);
+        AddressBookMsg book = stub.askAddressBook(Empty.newBuilder().build());
+        book.getAddressBookMap().forEach((key, value) -> addressMap.put(key, new Address(value)));
+        updateHash();
+        if (!hash.equals(msg.getMsg())) log.debug("Hash mismatch after update!");
+        Node.closeChannelProperly(channel);
     }
 
 }

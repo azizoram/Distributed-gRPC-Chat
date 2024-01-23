@@ -12,12 +12,15 @@ import java.util.Iterator;
 import java.util.Map;
 @Slf4j(topic = "main_topic")
 public class LocalLeader extends AbstractLdr{ // the node itself is a leader
-    private Map<String, Address> addressMap = new HashMap<String, Address>();
 
     public LocalLeader(Node node){
         super(node);
         addressMap.put(node.getUname(), node.getOwn());
+        updateHash();
     }
+
+
+
     public boolean checkPresence(){return true;}
 
     @Override
@@ -35,7 +38,8 @@ public class LocalLeader extends AbstractLdr{ // the node itself is a leader
             } catch (Exception e) {
                 log.error("Error sending broadcast message to " + entry.getValue() + " : " + e.getMessage());
                 log.info("Node {} on {} is no longer available, removing", entry.getKey(), entry.getValue());
-                iter.remove(); // kaif ???
+                iter.remove();
+                updateHash();
             }
         }
     }
@@ -58,25 +62,18 @@ public class LocalLeader extends AbstractLdr{ // the node itself is a leader
     public void nodeHasJoined(NodeJoined nodeJoined) {
         Address address = new Address(nodeJoined.getAddress());
         addressMap.put(nodeJoined.getUname(), address);
+        updateHash();
     }
 
 
     @Override
     public boolean find(String recipient) {
         return addressMap.containsKey(recipient);
-        // ping len' TODO
     }
 
-    void sendDirectTo(String to, String msg, String author){
-
-        Address recipient = addressMap.getOrDefault(to, null);
-        if (recipient == null){
-            //chujna
-        }
-
-        ManagedChannel channel = NodeUtils.openChannelTo(recipient);
-        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
-        DirectMessage dm = DirectMessage.newBuilder().setMessage(msg).setRecipient(to).setAuthor(author).build();
-        stub.sendMessage(dm); 
+    @Override
+    public void updateAddressBook() {
+        // do nothing
     }
+
 }

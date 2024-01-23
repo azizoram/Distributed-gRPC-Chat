@@ -1,9 +1,7 @@
 package cz.cvut.fel.services;
 
-import cz.cvut.fel.Empty;
-import cz.cvut.fel.Node;
-import cz.cvut.fel.TerminationServiceGrpc;
-import cz.cvut.fel.Token;
+import cz.cvut.fel.*;
+import cz.cvut.fel.leader.AbstractLdr;
 import cz.cvut.fel.model.Address;
 import cz.cvut.fel.utils.NodeUtils;
 import io.grpc.ManagedChannel;
@@ -11,6 +9,8 @@ import io.grpc.stub.StreamObserver;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static cz.cvut.fel.utils.NodeUtils.respondEmpty;
@@ -47,7 +47,7 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
     public void initiateDetection() {
         log.info("Initiating termination detection");
         isInitiator = true;
-        if (!isPassive){// if the node which initiated termination is not passive, it should act as if it recived black token but have some buisness to do before making new white one
+        if (!isPassive){// if the node which initiated termination is not passive, it should act as if it received black token but have some buisness to do before making new white one
             log.info("Initiator is not passive");
             Token token = Token.newBuilder().setIsBlack(true).build();
             holdedToken = token;
@@ -59,7 +59,7 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
     }
 
     private void pass(Token token) {
-        ManagedChannel channel = NodeUtils.openChannelToPrev(node, true);
+        ManagedChannel channel = getChannelToPrev();
         if (channel == null){
             log.error("Topology broken, cannot pass token");
             return;
@@ -67,6 +67,30 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
         TerminationServiceGrpc.TerminationServiceBlockingStub stub = TerminationServiceGrpc.newBlockingStub(channel);
         stub.detectTermination(token);
         Node.closeChannelProperly(channel);
+    }
+
+    private ManagedChannel getChannelToPrev() {
+        AbstractLdr ldr = node.getLeader();
+        ldr.updateAddressBook();
+        Address prev = getPrev(node.getOwn(), ldr.getAddressBook());
+        ManagedChannel channel = NodeUtils.openChannelTo(prev);
+        while (node.isChannelDead(channel)){
+            log.debug("Topology broken, prev is unresponsive, skipping");
+            prev = getPrev(prev, ldr.getAddressBook());
+            channel = NodeUtils.openChannelTo(prev);
+        }
+        return channel;
+    }
+
+    private Address getPrev(Address curr, Map<String, Address> addressBook) {
+        Address[] addresses = addressBook.values().stream().sorted().toArray(Address[]::new);
+        Address prev = addresses[addresses.length - 1];
+        for (Address address : addresses) {
+            if (address.compareTo(curr) < 0) {
+                prev = address;
+            }
+        }
+        return prev;
     }
 
     public void detectTermination(Token token, StreamObserver<Empty> responseObserver) {
@@ -106,5 +130,30 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
         if (node.getOwn().compareTo(other) < 0){
             isBlack = true;
         }
+    }
+
+    public void askHash(Empty request, StreamObserver<StringMsg> responseObserver) {
+        StringMsg msg = node.getLeader().getHashMsg();
+        responseObserver.onNext(msg);
+        responseObserver.onCompleted();
+    }
+    public void askAddressBook(Empty request, StreamObserver<AddressBookMsg> addressBookMsgStreamObserver){
+        AddressBookMsg msg = node.getLeader().getAddressBookMsg();
+        addressBookMsgStreamObserver.onNext(msg);
+        addressBookMsgStreamObserver.onCompleted();
+    }
+
+    public void msgSentTo(String recipient) {
+        List<Map.Entry<String, Address>> entryList = node.getLeader().getAddressBook()
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue()).toList();
+        for (Map.Entry<String, Address> stringAddressEntry : entryList) {
+            if (stringAddressEntry.getKey().equals(recipient)) {
+                sendMessageTo(stringAddressEntry.getValue());
+                return;
+            }
+        }
+
     }
 }

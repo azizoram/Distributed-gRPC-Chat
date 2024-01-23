@@ -32,6 +32,8 @@ public class ChatClient implements Runnable{
             node.handleJoinCommand(commandline);
         } else if (commandline.startsWith("/calculationMsg")){
             node.sendCalculationMsg(commandline);
+        } else if (commandline.startsWith("/who")){
+            node.printAddressBook();
         }
         else if (commandline.startsWith("/logout")) {
             node.selfLogOut();

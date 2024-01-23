@@ -33,6 +33,9 @@ service ElectionService{
 
 service TerminationService{
     rpc detectTermination(Token) returns (Empty);
+
+    rpc askHash(Empty) returns (StringMsg); // requires to know on flight whole virtual topology
+    rpc askAddressBook(Empty) returns (AddressBookMsg);
 }
 
 message NodeJoined {
@@ -105,3 +108,10 @@ message UpdateNeighbourMsg {
     bool isPrev = 2;
 }
 
+message StringMsg {
+    string msg = 1;
+}
+
+message AddressBookMsg {
+    map<string, AddressMsg> addressBook = 1;
+}

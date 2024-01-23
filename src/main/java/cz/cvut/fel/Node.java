@@ -19,6 +19,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
+import java.util.Comparator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Getter
@@ -337,5 +339,19 @@ public class Node implements Runnable{
             :
                 new RemoteLeader(this);
 
+    }
+
+    public void printAddressBook() {
+        leader.updateAddressBook();
+        log.info("Address book:");
+        leader.getAddressBook()
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue())
+                .forEach(entry -> log.info("    " + entry.getKey() + " : " + entry.getValue()));
+    }
+
+    public void msgSentTo(String recipient) {
+        terminationService.msgSentTo(recipient);
     }
 }

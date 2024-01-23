@@ -80,6 +80,7 @@ public class ChatService extends NodeServiceGrpc.NodeServiceImplBase {
             return;
         }
         String recipient = split[1];
+        node.msgSentTo(recipient);
         String message = Arrays.stream(split).skip(2).collect(Collectors.joining(" "));
         DirectMessage msg = DirectMessage.newBuilder().setMessage(message).setAuthor(node.getUname()).setRecipient(recipient).build();
         node.getLeader().sendMessage(msg);
