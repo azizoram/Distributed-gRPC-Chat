@@ -96,6 +96,7 @@ message AddressPair {
 
 message Token {
     bool isBlack = 1;
+    int32 hopCount = 2;
 }
 
 message BrokenTopology {

@@ -43,17 +43,20 @@ public class ChatClient implements Runnable{
         else if (commandline.startsWith("/status")) {
             node.printStatus();
         } else if (commandline.startsWith("/help")) {
-            System.out.print("/help - this help");
-            System.out.print("/status - print node status");
-            System.out.print("/dm <username> <message> - send direct message to user");
-            System.out.print("/elect - start election");
-            System.out.print("/td - detect termination");
-            System.out.print("/setActive - set node active for termination detection");
-            System.out.print("/setPassive - set node passive for termination detection");
-            System.out.print("/set date HH:mm - set election delay until HH:mm");
-            System.out.print("/join <ip> <port> - join to the specific node");
-            System.out.print("/logout - logout from the network");
-            System.out.print("/selfDestruct - destroy the node without informing the network");
+            System.out.println("/help - this help");
+            System.out.println("/status - print node status");
+            System.out.println("/dm <username> <message> - send direct message to user");
+            System.out.println("/elect - start election");
+            System.out.println("/td - detect termination");
+            System.out.println("/setActive - set node active for termination detection");
+            System.out.println("/setPassive - set node passive for termination detection");
+            System.out.println("/set date HH:mm - set election delay until HH:mm");
+            System.out.println("/join <ip> <port> - join to the specific node");
+            System.out.println("/logout - logout from the network");
+            System.out.println("/selfDestruct - destroy the node without informing the network");
+            System.out.println("/who - print address book");
+            System.out.println("/calculationMsg <ip> <port> <message> - send calculation message directly to the node");
+
 
         } else {
             node.sendBroadcastMsg(commandline);

@@ -42,6 +42,9 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
         if (passive && holdedToken != null){
             processProcess(holdedToken);
         }
+        if (isPassive && node.isLeader()){
+            initiateDetection();
+        }
     }
 
     public void initiateDetection() {
@@ -49,11 +52,11 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
         isInitiator = true;
         if (!isPassive){// if the node which initiated termination is not passive, it should act as if it received black token but have some buisness to do before making new white one
             log.info("Initiator is not passive");
-            Token token = Token.newBuilder().setIsBlack(true).build();
+            Token token = Token.newBuilder().setIsBlack(true).setHopCount(50).build();
             holdedToken = token;
             return;
         }
-        Token token = Token.newBuilder().setIsBlack(false).build();
+        Token token = Token.newBuilder().setIsBlack(false).setHopCount(50).build();
 
         pass(token);
     }
@@ -105,16 +108,17 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
     }
 
     private void processProcess(Token token) {
+        Token hopken = token.toBuilder().setHopCount(token.getHopCount()-1).build();
         if (!isInitiator){
-            handleIthProcess(token);
+            handleIthProcess(hopken);
         }else {
-            handleZeroth(token);
+            handleZeroth(hopken);
         }
     }
 
     private void handleZeroth(Token token) {
         if (token.getIsBlack()){
-            Token newToken = Token.newBuilder().setIsBlack(false).build();
+            Token newToken = Token.newBuilder().setIsBlack(false).setHopCount(50).build();
             pass(newToken);
             return;
         }
@@ -122,7 +126,7 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
     }
 
     private void handleIthProcess(Token token) {
-        Token newToken = Token.newBuilder().setIsBlack(isBlack).build();
+        Token newToken = Token.newBuilder().setIsBlack(isBlack).setHopCount(token.getHopCount() - 1).build();
         pass(newToken);
         isBlack = false;
     }

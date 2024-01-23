@@ -354,4 +354,8 @@ public class Node implements Runnable{
     public void msgSentTo(String recipient) {
         terminationService.msgSentTo(recipient);
     }
+
+    public boolean isLeader() {
+        return own.compareTo(myNeighbours.leader) == 0;
+    }
 }

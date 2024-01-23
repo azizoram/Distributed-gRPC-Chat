@@ -115,6 +115,7 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
 
     private void becameLeader() {
         this.state = ElectionState.LEADER;
+        this.node.setActivityStatus(true);
         log.info("Switching state to leader");
         AddressPair leadermsg = AddressPair.newBuilder()
                 .setNtid(node.getOwn().toAddressMsg())

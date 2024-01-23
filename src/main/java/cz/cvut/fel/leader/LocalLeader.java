@@ -27,7 +27,7 @@ public class LocalLeader extends AbstractLdr{ // the node itself is a leader
     public void sendMessage(BroadcastMessage msg) {
         Message message = Message.newBuilder().setMessage(msg.getMessage()).setAuthor(msg.getAuthor()).setIsBcast(true).build();
 
-        Iterator iter = addressMap.entrySet().iterator();
+        Iterator<Map.Entry<String, Address>> iter = addressMap.entrySet().iterator();
         while (iter.hasNext()){
             Map.Entry<String, Address> entry = (Map.Entry<String, Address>) iter.next();
             try {
