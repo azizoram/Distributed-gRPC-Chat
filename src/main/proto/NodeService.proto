@@ -26,7 +26,7 @@ service NodeService{
 service ElectionService{
     rpc passNTID(AddressMsg) returns (Empty);
     rpc passNNTID(AddressMsg) returns (Empty);
-    rpc tossCall(AddressPair) returns (Empty);
+    rpc passSynchen(ElectionMsg) returns (Empty);
     rpc sendLeader(AddressPair) returns (Empty);
     rpc informElection(AddressMsg) returns (Empty);
 }
@@ -115,4 +115,10 @@ message StringMsg {
 
 message AddressBookMsg {
     map<string, AddressMsg> addressBook = 1;
+}
+
+
+message ElectionMsg {
+    AddressMsg address = 1;
+    bool shouldRebuild = 2;
 }

@@ -79,22 +79,57 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
     @Override
     public void passNNTID(AddressMsg request, StreamObserver<Empty> responseObserver) {
         NodeUtils.respondEmpty(responseObserver);
+
+
         ManagedChannel channel = openChannelToNext(node, true);
         ElectionServiceGrpc.ElectionServiceBlockingStub stub = ElectionServiceGrpc.newBlockingStub(channel);
 
         if(state==ElectionState.RELAY){
             stub.passNNTID(request);
         }else if (nntid != null){
-            stub.passNTID(tid.toAddressMsg());
+            stub.passSynchen(ElectionMsg.newBuilder().setAddress(node.getOwn().toAddressMsg()).setShouldRebuild(true).build());
+
+//            stub.passSynchen();
         }else{
             nntid = new Address(request);
             AddressMsg nntidmsg = ntid.toAddressMsg();
-            if(handleGeorgeKlic()){
-                stub.passNNTID(nntidmsg);
+            stub.passNNTID(nntidmsg);
+        }
+        Node.closeChannelProperly(channel);
+    }
+
+    @Override
+    public void passSynchen(ElectionMsg request, StreamObserver<Empty> responseObserver) {
+        NodeUtils.respondEmpty(responseObserver);
+
+
+        ManagedChannel channel = openChannelToNext(node, true);
+        ElectionServiceGrpc.ElectionServiceBlockingStub stub = ElectionServiceGrpc.newBlockingStub(channel);
+
+        if(state==ElectionState.RELAY){
+            stub.passSynchen(request);
+        }else {
+            if (request.getShouldRebuild()){
+                if (!handleGeorgeKlic()) return;
+                if (new Address(request.getAddress()).compareTo(node.getOwn()) == 0){
+                    if(state == ElectionState.RELAY){
+                        stub.passSynchen(ElectionMsg.newBuilder().setAddress(node.getOwn().toAddressMsg()).setShouldRebuild(false).build());
+                    }else{
+                        stub.passNTID(tid.toAddressMsg());
+                    }
+                }else {
+                    stub.passSynchen(request);
+                }
+                return;
+
+            }else {
+                stub.passNTID(tid.toAddressMsg());
             }
         }
         Node.closeChannelProperly(channel);
     }
+
+
 
     // handle george klic
     // node has actual ntid and nntid pair and can do bingo byngo bongo
