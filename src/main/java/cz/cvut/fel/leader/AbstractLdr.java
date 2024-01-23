@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.security.MessageDigest;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,7 +51,7 @@ public abstract class AbstractLdr {
     protected String calculateHash(){
         try{
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String hash = addressMap.entrySet().stream().sorted().map(entry -> entry.getKey() + entry.getValue().toString()).reduce("", String::concat);
+            String hash = addressMap.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getValue)).map(entry -> entry.getKey() + entry.getValue().toString()).reduce("", String::concat);
             return new String(digest.digest(hash.getBytes()));
         }catch (Exception e){
             log.error("Error calculating hash: " + e.getMessage());
