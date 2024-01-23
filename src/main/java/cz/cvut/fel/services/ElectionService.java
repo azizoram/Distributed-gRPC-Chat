@@ -37,6 +37,11 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
         this.nntid = null;
         state = ElectionState.ACTIVE;
     }
+    public void resetState(){
+        log.debug("Node election state has been reset due to broken topology");
+        resetElection();
+        host = null;
+    }
 
 //    @Override
     public void sendLeader(AddressPair leaderMsg, StreamObserver<Empty> responseObserver) {

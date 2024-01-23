@@ -2,6 +2,7 @@ package cz.cvut.fel.leader;
 
 import cz.cvut.fel.*;
 import cz.cvut.fel.model.Address;
+import cz.cvut.fel.services.ElectionState;
 import cz.cvut.fel.services.TerminationService;
 import cz.cvut.fel.utils.NodeUtils;
 import io.grpc.ManagedChannel;
@@ -27,14 +28,15 @@ public class RemoteLeader extends AbstractLdr{
     private ManagedChannel checkChannel(ManagedChannel channel) {
         if (node.isChannelDead(channel)){
             log.error("There is no lord here!");
-            log.info("Holding message for 3 seconds, hope there will be leader by this time");
+            log.info("Holding message for 10 seconds, hope there will be leader by this time");
             channel = null;
             node.startElection();
 
-            NodeUtils.holdThreadFor(3*1024, (ignored) -> (true));
+            NodeUtils.holdThreadFor(10*1024, (ignored) -> (true));
 
             channel = NodeUtils.openChannelTo(node.getMyNeighbours().leader);
             if (node.isChannelDead(channel)){
+                node.getElectionService().resetState();
                 log.error("No leader elected still... Ceasing this message");
                 channel = null;
             }
