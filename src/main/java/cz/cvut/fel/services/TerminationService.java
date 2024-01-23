@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import static cz.cvut.fel.utils.NodeUtils.respondEmpty;
 
@@ -151,7 +152,8 @@ public class TerminationService extends TerminationServiceGrpc.TerminationServic
         List<Map.Entry<String, Address>> entryList = node.getLeader().getAddressBook()
                 .entrySet()
                 .stream()
-                .sorted(Map.Entry.comparingByValue()).toList();
+                .sorted(Map.Entry.comparingByValue())
+                .collect(Collectors.toList());
         for (Map.Entry<String, Address> stringAddressEntry : entryList) {
             if (stringAddressEntry.getKey().equals(recipient)) {
                 sendMessageTo(stringAddressEntry.getValue());
