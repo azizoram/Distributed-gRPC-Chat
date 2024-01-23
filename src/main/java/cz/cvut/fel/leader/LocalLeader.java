@@ -8,6 +8,7 @@ import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 @Slf4j(topic = "main_topic")
 public class LocalLeader extends AbstractLdr{ // the node itself is a leader
@@ -23,14 +24,18 @@ public class LocalLeader extends AbstractLdr{ // the node itself is a leader
     public void sendMessage(BroadcastMessage msg) {
         Message message = Message.newBuilder().setMessage(msg.getMessage()).setAuthor(msg.getAuthor()).setIsBcast(true).build();
 
-        for (Address address : addressMap.values()) {
+        Iterator iter = addressMap.entrySet().iterator();
+        while (iter.hasNext()){
+            Map.Entry<String, Address> entry = (Map.Entry<String, Address>) iter.next();
             try {
-                ManagedChannel channel = NodeUtils.openChannelTo(address);
+                ManagedChannel channel = NodeUtils.openChannelTo(entry.getValue());
                 NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
                 stub.receiveMessage(message);
                 Node.closeChannelProperly(channel);
             } catch (Exception e) {
-                log.error("Error sending broadcast message to " + address + " : " + e.getMessage());
+                log.error("Error sending broadcast message to " + entry.getValue() + " : " + e.getMessage());
+                log.info("Node {} on {} is no longer available, removing", entry.getKey(), entry.getValue());
+                iter.remove(); // kaif ???
             }
         }
     }

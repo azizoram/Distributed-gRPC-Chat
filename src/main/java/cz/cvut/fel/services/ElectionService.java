@@ -19,6 +19,7 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
     private Address nntid;
     private ElectionState state;
     private Address host = null;
+    private final Address sneaky = new Address("0.0.0.0", 0);
 
     public ElectionService(Node node){
         this.node = node;
@@ -111,7 +112,6 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
     private void becameLeader() {
         this.state = ElectionState.LEADER;
         log.info("Switching state to leader");
-        node.sendBroadcastMsg("I am the leader");
         AddressPair leadermsg = AddressPair.newBuilder()
                 .setNtid(node.getOwn().toAddressMsg())
                 .setNntid(node.getOwn().toAddressMsg())
@@ -133,6 +133,11 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
             informNext();
         } else if (electionHost.compareTo(host) == 0){ // circle ended
             // Election started
+            if (electionHost.compareTo(sneaky) == 0) {
+                host = null;
+                return;
+            }
+
             log.info("Election started");
             startElection();
         } // weaker host do nothing
@@ -141,6 +146,9 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
 
     private void informNext() {
         ManagedChannel channel = NodeUtils.openChannelToNext(node, true);
+        if (channel == null){
+            return;
+        }
         ElectionServiceGrpc.ElectionServiceBlockingStub stub = ElectionServiceGrpc.newBlockingStub(channel);
         stub.informElection(host.toAddressMsg());
         Node.closeChannelProperly(channel);
@@ -150,14 +158,6 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
         ManagedChannel channel = openChannelToNext(node, true);
         ElectionServiceGrpc.ElectionServiceBlockingStub blockingStub = ElectionServiceGrpc.newBlockingStub(channel);
         blockingStub.sendLeader(leadermsg);
-        Node.closeChannelProperly(channel);
-    }
-
-    private void tossPair(AddressPair addressPair) {
-        ManagedChannel channel = openChannelToNext(node, true);
-        ElectionServiceGrpc.ElectionServiceBlockingStub blockingStub = ElectionServiceGrpc.newBlockingStub(channel);
-        blockingStub.tossCall(addressPair);
-
         Node.closeChannelProperly(channel);
     }
 
@@ -171,13 +171,6 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
             maximum = this.nntid;
         }
         return maximum;
-    }
-    public void handleRelay(AddressPair request){
-        ManagedChannel channel = openChannelToNext(node, true);
-        ElectionServiceGrpc.ElectionServiceBlockingStub blockingStub = ElectionServiceGrpc.newBlockingStub(channel);
-//        blockingStub.sendPID(request);
-        blockingStub.tossCall(request);
-        Node.closeChannelProperly(channel);
     }
 
     public void startElection(){
@@ -196,9 +189,22 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
             log.info("There is already an election going on, by host: {}", host);
             return;
         }
+
+        sneakyPreheat();
+
         host = node.getOwn();
         resetElection();
         informNext();
+    }
+
+    private void sneakyPreheat(){
+        host = sneaky;
+        informNext();
+
+        NodeUtils.holdThreadFor(950, ignored->this.host != null);
+
+
+        host = null;
     }
 
 

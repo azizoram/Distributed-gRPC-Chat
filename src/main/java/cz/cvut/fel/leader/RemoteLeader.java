@@ -5,7 +5,9 @@ import cz.cvut.fel.model.Address;
 import cz.cvut.fel.utils.NodeUtils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j(topic = "main_topic")
 public class RemoteLeader extends AbstractLdr{
     public RemoteLeader(Node node) {
         super(node);
@@ -14,14 +16,36 @@ public class RemoteLeader extends AbstractLdr{
     @Override
     public void sendMessage(BroadcastMessage msg) {
         ManagedChannel channel = NodeUtils.openChannelTo(node.getMyNeighbours().leader);
+        channel = checkChannel(channel);
+        if (channel == null) return;
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         stub.broadcastMessage(msg);
         Node.closeChannelProperly(channel);
     }
 
+    private ManagedChannel checkChannel(ManagedChannel channel) {
+        if (node.isChannelDead(channel)){
+            log.error("There is no lord here!");
+            log.info("Holding message for 3 seconds, hope there will be leader by this time");
+            channel = null;
+            node.startElection();
+
+            NodeUtils.holdThreadFor(3*1024, (ignored) -> (true));
+
+            channel = NodeUtils.openChannelTo(node.getMyNeighbours().leader);
+            if (node.isChannelDead(channel)){
+                log.error("No leader elected still... Ceasing this message");
+                channel = null;
+            }
+        }
+        return channel;
+    }
+
     @Override
     public void sendMessage(DirectMessage msg) {
         ManagedChannel channel = NodeUtils.openChannelTo(node.getMyNeighbours().leader);
+        checkChannel(channel);
+        if (channel == null) return;
         NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
         stub.sendMessage(msg);
         Node.closeChannelProperly(channel);
@@ -48,16 +72,4 @@ public class RemoteLeader extends AbstractLdr{
         return true; // TODO TODO
     }
 
-    void sendDirectTo(String to, String msg, String author){
-        boolean status = checkPresence();
-        if (status != true){
-            //start election
-            //wait long enough to elect new leader/ till elected new leader
-        }
-
-        ManagedChannel channel = NodeUtils.openChannelTo(node.getMyNeighbours().leader);
-        NodeServiceGrpc.NodeServiceBlockingStub stub = NodeServiceGrpc.newBlockingStub(channel);
-        DirectMessage dm = DirectMessage.newBuilder().setMessage(msg).setRecipient(to).setAuthor(author).build();
-        stub.sendMessage(dm);
-    }
 }
