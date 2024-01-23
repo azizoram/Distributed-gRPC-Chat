@@ -1,1 +1,1 @@
-./run.sh VyacheslavDruhy "$1" 5050
+./run.sh VyacheslavDruhy "$(ip addr show enp0s3 | awk '/inet / {print $2}' | cut -d '/' -f 1)" 5050
