@@ -99,6 +99,7 @@ public class ElectionService extends ElectionServiceGrpc.ElectionServiceImplBase
     // handle george klic
     // node has actual ntid and nntid pair and can do bingo byngo bongo
     private boolean handleGeorgeKlic(){
+        log.debug("Handling election round \nTid: {} \nNtid: {} \nNNtid: {}", tid, ntid, nntid);
         if (this.ntid.compareTo(tid) == 0){
             becameLeader();
             return false;

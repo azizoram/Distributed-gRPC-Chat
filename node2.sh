@@ -1,1 +1,1 @@
-./run.sh ChRamir "$2" 3030
+./run.sh ChRamir "$1" 3030
