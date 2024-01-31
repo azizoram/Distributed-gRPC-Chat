@@ -6,7 +6,7 @@
     </appender>
 
     <logger name="io.grpc.netty" level="info"/>
-    <logger name="bimbam" level="ALL">
+    <logger name="main_topic" level="ALL">
         <appender-ref ref="STDOUT" />
     </logger>
 </configuration>

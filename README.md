@@ -12,11 +12,11 @@ build.sh will also copy the generated jar files to the root directory of the pro
 ## Run
 To run node execute ./run.sh or run on the following commands:
 ```
-java -jar build/libs/chat-1.0-SNAPSHOT.jar <port> <name>
+java -jar build/libs/chat-1.0-SNAPSHOT.jar <own ip> <port> <name>
 ```
 or
 ```
-java -jar gRPC_chat_sem.jar <port> <name>
+java -jar gRPC_chat_sem.jar <own ip> <port> <name>
 ```
 ## Usage
 All commands are available after typing /help in the chat.

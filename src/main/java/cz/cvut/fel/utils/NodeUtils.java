@@ -7,6 +7,8 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
+import java.util.function.Predicate;
+
 public class NodeUtils {
     public static ManagedChannel openChannelToPrev(Node node, boolean checkConnectivity){
         Address prev = node.getPrevAddr();
@@ -15,6 +17,7 @@ public class NodeUtils {
                 .build();
         if (checkConnectivity && node.isChannelDead(channel)){
             node.prevBroken();
+            channel = null;
         }
         return channel;
     }
@@ -31,7 +34,23 @@ public class NodeUtils {
                 .build();
         if (checkConnectivity && node.isChannelDead(channel)){
             node.nextBroken();
+            channel = null;
         }
         return channel;
+    }
+
+    public static ManagedChannel openChannelTo(Address to) {
+        return ManagedChannelBuilder.forAddress(to.hostname, to.port).usePlaintext().build();
+    }
+
+    public static void holdThreadFor(long milis, Predicate<Void> waitingCondition){
+
+        boolean waiting = true;
+        long started = System.currentTimeMillis();
+        long timeoutMs = 950;
+        while(waiting){
+                waiting = waitingCondition.test(null) && ((System.currentTimeMillis() - started) < timeoutMs);
+        }
+
     }
 }

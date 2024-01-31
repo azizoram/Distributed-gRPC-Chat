@@ -5,22 +5,44 @@ option java_package = "cz.cvut.fel";
 
 service NodeService{
     rpc join(JoinRequest) returns (JoinResponse);
-    rpc sendMessage(DirectMessage) returns (Empty);      // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
-    rpc updateConnection(JoinRequest) returns (Empty);   // Specialni zprava pro zpetecne spojeni
+    rpc updateConnection(UpdateNeighbourMsg) returns (Empty);   // Specialni zprava pro zpetecne spojeni
+
+    rpc sendMessage(DirectMessage) returns (DMStatus);      // 1 vyzaduje stream, 2 vraci stream, pak skrz streamy posilam zpravy
     rpc broadcastMessage(BroadcastMessage) returns (Empty);
+
+    rpc receiveMessage(Message) returns (Empty);
+//    Message contains isBcast bool, bcast or dm
+
+//    Node sendMessage -> Leader, Leader reciveMessage -> Recpient(s)
+//            dmStatus <- Uname not found/ok bool
+
     rpc logOut(LogOutRequest) returns (Empty);
 
     rpc ping(Empty) returns (Empty);
     rpc connectionLost(BrokenTopology) returns (Empty);
+    rpc zfotalZapisal(NodeJoined) returns (Empty);
 }
 
 service ElectionService{
-    rpc sendPID(AddressMsg) returns (Empty);
-    rpc tossCall(AddressPair) returns (Empty);
+    rpc passNTID(AddressMsg) returns (Empty);
+    rpc passNNTID(AddressMsg) returns (Empty);
+    rpc passSynchen(ElectionMsg) returns (Empty);
+    rpc sendLeader(AddressPair) returns (Empty);
+    rpc informElection(AddressMsg) returns (Empty);
 }
 
 service TerminationService{
     rpc detectTermination(Token) returns (Empty);
+
+    rpc askHash(Empty) returns (StringMsg); // requires to know on flight whole virtual topology
+    rpc askAddressBook(Empty) returns (AddressBookMsg);
+}
+
+message NodeJoined {
+    AddressMsg address = 1;
+    string uname = 2;
+    AddressMsg prev = 3;
+    AddressMsg next = 4;
 }
 
 message AddressMsg {
@@ -33,18 +55,25 @@ message JoinRequest {
     AddressMsg address = 2;
 }
 
+message Message{
+    string author = 1;
+    string message = 2;
+    bool isBcast = 3;
+}
+
 message DirectMessage {
     string author = 1;
     string message = 2;
     string recipient = 3;
-    bool received = 4;
-    int32 hopCount = 5;
 }
 
 message BroadcastMessage {
     string author = 1;
     string message = 2;
-    int32 hopCount = 3;
+}
+
+message DMStatus{
+    bool msgReceived = 1;
 }
 
 message Empty {}
@@ -52,6 +81,7 @@ message Empty {}
 message JoinResponse {
     AddressMsg next = 1;
     AddressMsg prev = 2;
+    AddressMsg leader = 3; // 0.0.0.0 0000 <- leader unset
 }
 
 message LogOutRequest {
@@ -66,9 +96,29 @@ message AddressPair {
 
 message Token {
     bool isBlack = 1;
+    int32 hopCount = 2;
 }
 
 message BrokenTopology {
     AddressMsg brokenNode = 1;
     bool isPrevBroken = 2;
+}
+
+message UpdateNeighbourMsg {
+    AddressMsg address = 1;
+    bool isPrev = 2;
+}
+
+message StringMsg {
+    string msg = 1;
+}
+
+message AddressBookMsg {
+    map<string, AddressMsg> addressBook = 1;
+}
+
+
+message ElectionMsg {
+    AddressMsg address = 1;
+    bool shouldRebuild = 2;
 }

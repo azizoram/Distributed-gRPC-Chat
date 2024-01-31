@@ -26,17 +26,38 @@ public class ChatClient implements Runnable{
             node.setActivityStatus(true);
         } else if (commandline.startsWith("/setPassive")) {
             node.setActivityStatus(false);
+        } else if (commandline.startsWith("/set")){
+            node.handlerSet(commandline);
+        } else if (commandline.startsWith("/join")){
+            node.handleJoinCommand(commandline);
+        } else if (commandline.startsWith("/calculationMsg")){
+            node.sendCalculationMsg(commandline);
+        } else if (commandline.startsWith("/who")){
+            node.printAddressBook();
         }
         else if (commandline.startsWith("/logout")) {
             node.selfLogOut();
         } else if(commandline.startsWith("/selfDestruct")){
             node.selfDestruct();
         }
-        else if (commandline.equals("s")) {
+        else if (commandline.startsWith("/status")) {
             node.printStatus();
-        } else if (commandline.equals("?")) {
-            System.out.print("? - this help");
-            System.out.print("s - print node status");
+        } else if (commandline.startsWith("/help")) {
+            System.out.println("/help - this help");
+            System.out.println("/status - print node status");
+            System.out.println("/dm <username> <message> - send direct message to user");
+            System.out.println("/elect - start election");
+            System.out.println("/td - detect termination");
+            System.out.println("/setActive - set node active for termination detection");
+            System.out.println("/setPassive - set node passive for termination detection");
+            System.out.println("/set date HH:mm - set election delay until HH:mm");
+            System.out.println("/join <ip> <port> - join to the specific node");
+            System.out.println("/logout - logout from the network");
+            System.out.println("/selfDestruct - destroy the node without informing the network");
+            System.out.println("/who - print address book");
+            System.out.println("/calculationMsg <ip> <port> <message> - send calculation message directly to the node");
+
+
         } else {
             node.sendBroadcastMsg(commandline);
         }
@@ -61,12 +82,8 @@ public class ChatClient implements Runnable{
         System.out.println("Closing chat client.");
     }
 
-    public void reciveBcastMsg(BroadcastMessage msg) {
-        System.out.println("B!" + msg.getAuthor() + " : " + msg.getMessage());
-    }
-
-    public void receiveDirectMsg(DirectMessage message) {
-        System.out.println("D!" + message.getAuthor() + " : " + message.getMessage());
+    public void receiveMsg(Message msg){
+        System.out.println((msg.getIsBcast()?"B! ":"D! ") + msg.getAuthor() + " : " + msg.getMessage());
     }
 
     public void failedDirectMsg(DirectMessage message) {

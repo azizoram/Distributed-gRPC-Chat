@@ -2,15 +2,13 @@ package cz.cvut.fel;
 
 import cz.cvut.fel.model.Address;
 
-import java.util.ArrayList;
-
 public class Main {
     public static void main(String[] args) {
-        if (args.length != 2) {
-            System.out.println("Usage: java -jar <jar-file> <uname> <port>");
+        if (args.length != 3) {
+            System.out.println("Usage: java -jar <jar-file> <uname> <own_ip> <port>");
             System.exit(1);
         }
-        Node node = new Node(args[0], new Address("localhost", Integer.parseInt(args[1])));
+        Node node = new Node(args[0], new Address(args[1], Integer.parseInt(args[2])));
         node.run();
     }
 }
